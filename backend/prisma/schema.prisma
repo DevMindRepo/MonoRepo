@@ -1,0 +1,171 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pgvector(map: "vector"), pg_stat_statements, pgcrypto, uuidOssp(map: "uuid-ossp")]
+}
+
+model User {
+  id          String   @id @default(cuid())
+  suiAddress  String   @unique
+  displayName String?
+  createdAt   DateTime @default(now())
+
+  workspaceMembers WorkspaceMember[]
+  memories         Memory[]
+  artifacts        Artifact[]
+  pendingMemories  PendingMemory[]
+  apiTokens        ApiToken[]
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  ownerId     String
+  suiObjectId String?
+  walrusRoot  String?
+  createdAt   DateTime @default(now())
+
+  members         WorkspaceMember[]
+  memories        Memory[]
+  artifacts       Artifact[]
+  pendingMemories PendingMemory[]
+  apiTokens       ApiToken[]
+  webhooks        GitHubWebhook[]
+  agentRuns       AgentRun[]
+}
+
+model WorkspaceMember {
+  workspaceId String
+  userId      String
+  role        String   @default("member")
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+}
+
+model Memory {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  authorId     String
+  content      String
+  type         String
+  privacy      String   @default("team")
+  status       String   @default("pending_approval")
+  tags         String[]
+  walrusBlobId String?
+  source       String?
+  sessionId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User             @relation(fields: [authorId], references: [id])
+  embedding MemoryEmbedding?
+}
+
+model MemoryEmbedding {
+  id       String                      @id @default(cuid())
+  memoryId String                      @unique
+  vector   Unsupported("vector(768)")?
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+}
+
+model PendingMemory {
+  id          String   @id @default(cuid())
+  workspaceId String
+  authorId    String
+  content     String
+  type        String
+  privacy     String   @default("team")
+  tags        String[]
+  secretFlags String[]
+  source      String?
+  sessionId   String?
+  redisKey    String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+}
+
+model Artifact {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  authorId        String
+  filename        String
+  type            String
+  walrusBlobId    String
+  sizeBytes       Int      @default(0)
+  source          String?
+  relatedMemoryId String?
+  createdAt       DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+}
+
+model ApiToken {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String?
+  name        String
+  tokenHash   String    @unique
+  prefix      String
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model GitHubWebhook {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  repo           String
+  event          String    @default("pull_request")
+  secret         String
+  active         Boolean   @default(true)
+  lastDeliveryAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, repo, event])
+}
+
+model AgentRun {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  agentName        String   @default("pr-reviewer")
+  prNumber         Int?
+  prTitle          String?
+  prUrl            String?
+  status           String   @default("running")
+  reasoning        String?
+  comment          String?
+  memoriesQueried  String[]
+  reviewPosted     Boolean  @default(false)
+  durationMs       Int?
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}

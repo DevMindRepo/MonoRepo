@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+build/
+.next/
+.turbo/
+out/
+
+# Move build artifacts
+build/
+*.move.lock
+
+# Env files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test
+coverage/
+.nyc_output/
+
+# Prisma
+prisma/migrations/dev/
+
+# Wallet (NEVER commit private keys)
+.sui/
+sui.keystore
+*.key
+
+# Tooling
+.cache/
+
+# Separate repo (smart contract has its own GitHub repo)
+smart_contract/
+
+# Temporarily hidden inner .git folders during monorepo push
+.git.bak/
+**/.git.bak/
+
+# Local docs / scratch
+DEVMIND (1).md
+

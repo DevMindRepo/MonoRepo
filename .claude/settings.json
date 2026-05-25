@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($ErrorActionPreference = 'Stop'; $installDir = \"$env:USERPROFILE\\\\.sui\\\\bin\"; $extractDir = \"$env:TEMP\\\\sui-extracted\"; \"Copying binaries...\"; Copy-Item \"$extractDir\\\\sui.exe\" $installDir -Force; Copy-Item \"$extractDir\\\\move-analyzer.exe\" $installDir -Force; Copy-Item \"$extractDir\\\\sui-faucet.exe\" $installDir -Force; \"Files installed:\"; Get-ChildItem $installDir | Select-Object Name, @{N='Size MB';E={[math]::Round\\($_.Length/1MB,1\\)}})"
+    ]
+  }
+}

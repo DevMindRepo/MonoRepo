@@ -1,0 +1,14 @@
+packages:
+  - frontend
+  - backend
+  - mcp-server
+  - agent
+  - packages/*
+
+ignoredBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - sharp
+  - unrs-resolver

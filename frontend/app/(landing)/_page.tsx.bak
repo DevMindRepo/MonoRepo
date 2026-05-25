@@ -1,0 +1,2 @@
+// Landing page is at app/page.tsx — this file is intentionally empty to avoid route conflict.
+// The (landing) folder is kept for future landing-specific route grouping.

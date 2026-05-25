@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-background: #070B0E;
+  --color-surface: #11181C;
+  --color-surface-2: #161D22;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --color-mint: #ADFF2F;
+  --color-mint-dim: #90D400;
+  --color-mint-glow: rgba(173,255,47,0.12);
+  --color-mint-glow-strong: rgba(173,255,47,0.20);
+  --color-cyan: #ADFF2F;
+
+  --color-magenta: #F472B6;
+  --color-magenta-dim: #EC4899;
+  --color-magenta-glow: rgba(244, 114, 182, 0.15);
+
+  --color-text-primary: #E8EDF0;
+  --color-text-secondary: #8B96A0;
+  --color-text-muted: #4B5563;
+
+  --color-success: #ADFF2F;
+  --color-warning: #FBBF24;
+  --color-destructive: #F87171;
+  --color-pending: #F472B6;
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-glow-mint: 0 0 20px rgba(173,255,47,0.15);
+  --shadow-glow-mint-strong: 0 0 40px rgba(173,255,47,0.25);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* shadcn primitive aliases — consumed by badge / card / button utility classes */
+  --color-card:                #11181C;
+  --color-card-foreground:     #E8EDF0;
+  --color-primary:             #ADFF2F;
+  --color-primary-foreground:  #0A0A0A;
+  --color-secondary:           rgba(255,255,255,0.08);
+  --color-secondary-foreground:#E8EDF0;
+  --color-muted:               rgba(255,255,255,0.04);
+  --color-muted-foreground:    #8B96A0;
+  --color-accent:              rgba(173,255,47,0.08);
+  --color-accent-foreground:   #ADFF2F;
+  --color-destructive:         rgba(248,113,113,0.15);
+  --color-destructive-foreground: #F87171;
+  --color-ring:                #ADFF2F;
+  --color-input:               rgba(255,255,255,0.08);
+
+  /* Animation durations */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --duration-hero: 40s;
+}
+
+/* Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #070B0E;
+  color: #E8EDF0;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #ADFF2F;
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(173, 255, 47, 0.2);
+  color: #E8EDF0;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(173, 255, 47, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Memory core pulse */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(var(--orbit-radius, 140px)) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(var(--orbit-radius, 140px)) rotate(-360deg); }
+}
+
+@keyframes solar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes solar-spin-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+@keyframes sun-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 0.85; transform: scale(1.12); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 250ms ease-out forwards;
+}
+
+/* Code block styling */
+code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.875em;
+}
+
+/* Orbital node popup entrance */
+@keyframes orbPopIn {
+  from { opacity: 0; transform: scale(0.85) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Gradient text */
+.gradient-text-mint {
+  background: linear-gradient(135deg, #ADFF2F 0%, #C8FF52 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

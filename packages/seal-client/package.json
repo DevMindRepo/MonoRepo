@@ -1,0 +1,19 @@
+{
+  "name": "@devmind/seal-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@devmind/shared": "workspace:*",
+    "@mysten/seal": "^1.1.3",
+    "@mysten/sui": "^2.17.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
