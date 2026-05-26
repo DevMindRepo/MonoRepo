@@ -81,7 +81,7 @@ function D({ children }: { children: ReactNode }) {
 
 function LeftCard() {
   return (
-    <div className="col-span-2 bg-[#0F1214] border border-[rgba(255,255,255,0.07)] rounded-[16px] overflow-hidden flex flex-col">
+    <div className="col-span-1 md:col-span-2 bg-[#0F1214] border border-[rgba(255,255,255,0.07)] rounded-[16px] overflow-hidden flex flex-col">
       <div className="bg-[#0A0D10] p-5 flex-1">
         <CodeLine>
           <K>import</K>
@@ -163,7 +163,7 @@ function LeftCard() {
 
 function RightCard() {
   return (
-    <div className="col-span-3 bg-[#0F1214] border border-[rgba(255,255,255,0.07)] rounded-[16px] overflow-hidden flex flex-col">
+    <div className="col-span-1 md:col-span-3 bg-[#0F1214] border border-[rgba(255,255,255,0.07)] rounded-[16px] overflow-hidden flex flex-col">
       <div className="bg-[#0A0D10] flex-1 p-3 overflow-hidden">
         <div className="bg-[#0F1214] rounded-[10px] h-full overflow-hidden border border-[rgba(255,255,255,0.06)] flex flex-col">
           {/* Topbar */}
@@ -234,10 +234,10 @@ function RightCard() {
 export function FeaturesBentoSection() {
   return (
     <section id="features" className="py-16 bg-[#070B0E]">
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         {/* Icon row */}
         <ScrollReveal>
-          <div className="grid grid-cols-6 gap-3 mb-4">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-4">
             {ICON_CARDS.map((card, index) => {
               if (card.isActive) {
                 return (
@@ -265,7 +265,7 @@ export function FeaturesBentoSection() {
 
         {/* Two bento cards */}
         <ScrollReveal delay={90}>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <LeftCard />
             <RightCard />
           </div>

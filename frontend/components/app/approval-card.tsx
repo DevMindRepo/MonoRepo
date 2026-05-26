@@ -92,17 +92,17 @@ export function ApprovalCard({
       )}
 
       <div className="p-5">
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
           <Chip variant={memoryTypeVariant[memory.type]} dot>
             {memory.type}
           </Chip>
-          <div className="flex items-center gap-3 text-xs text-[#8B96A0]">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-[#8B96A0]">
             <span className="flex items-center gap-1">
-              <Bot className="h-3 w-3" />
+              <Bot className="h-3 w-3 shrink-0" />
               {memory.source}
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
+              <Clock className="h-3 w-3 shrink-0" />
               {timeAgo(memory.createdAt)}
             </span>
           </div>
@@ -127,7 +127,7 @@ export function ApprovalCard({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="primary"
             size="sm"
@@ -153,7 +153,7 @@ export function ApprovalCard({
             size="sm"
             onClick={() => onReject(memory.id)}
             disabled={loading}
-            className="ml-auto gap-1.5"
+            className="sm:ml-auto gap-1.5"
           >
             <X className="h-3.5 w-3.5" />
             Reject

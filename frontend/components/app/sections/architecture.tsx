@@ -35,7 +35,7 @@ export function ArchitectureSection() {
       `}</style>
 
       <section
-        className="py-24 px-6"
+        className="py-16 md:py-24 px-4 md:px-6"
         style={{ background: "#050A0E", borderTop: "1px solid rgba(255,255,255,0.04)" }}
       >
         <div className="mx-auto max-w-6xl">
@@ -52,7 +52,7 @@ export function ArchitectureSection() {
             <p className="text-[12px] font-mono text-[#ADFF2F] uppercase tracking-[0.25em] mb-4">
               Architecture
             </p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-[#E8EDF0] leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#E8EDF0] leading-tight">
               Serious infrastructure.{" "}
               <br className="hidden lg:block" />
               <span style={{

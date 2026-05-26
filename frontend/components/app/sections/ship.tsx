@@ -251,7 +251,7 @@ function CodePanel({ code, inView }: { code: string; inView: boolean }) {
       }}
     >
       <WindowChrome title="devmind.ts" />
-      <div className="p-4 relative" style={{ minHeight: "230px" }}>
+      <div className="p-4 relative overflow-x-auto" style={{ minHeight: "230px" }}>
         {/* Syntax-highlighted version — fades in when done */}
         <div style={{ opacity: done ? 1 : 0, transition: done ? "opacity 0.4s ease" : "none" }}>
           {buildLines(code, true)}
@@ -335,7 +335,7 @@ export function ShipSection() {
 
   return (
     <section id="ship" className="py-16 lg:py-24" style={{ background: "#070B0E" }}>
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
 
         {/* Section header */}
         <ScrollReveal>
@@ -343,7 +343,7 @@ export function ShipSection() {
             <p className="text-[13px] font-mono text-[#ADFF2F] uppercase tracking-[0.25em] mb-4">
               Memory Platform
             </p>
-            <h2 className="text-4xl lg:text-[52px] font-bold text-[#E8EDF0] leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-[52px] font-bold text-[#E8EDF0] leading-tight">
               Ship memory tools{" "}
               <span className="gradient-text-mint">in minutes</span>
             </h2>
@@ -363,7 +363,7 @@ export function ShipSection() {
           >
             {/* Tab row */}
             <div
-              className="flex items-center justify-center gap-3 p-5 flex-wrap"
+              className="flex items-center justify-center gap-2 md:gap-3 p-4 md:p-5 flex-wrap"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
             >
               {TABS.map(({ id, label, Icon }) => {
@@ -372,10 +372,10 @@ export function ShipSection() {
                   <button
                     key={id}
                     onClick={() => setActiveTab(id)}
-                    className="group relative flex items-center justify-center rounded-[14px] transition-all duration-200 shrink-0"
+                    className="group relative flex items-center justify-center rounded-[12px] md:rounded-[14px] transition-all duration-200 shrink-0"
                     style={{
-                      width: "110px",
-                      height: "64px",
+                      width: "68px",
+                      height: "48px",
                       background: active ? "rgba(173,255,47,0.10)" : "rgba(255,255,255,0.04)",
                       border: active ? "1px solid rgba(173,255,47,0.28)" : "1px solid rgba(255,255,255,0.08)",
                       color: active ? "#ADFF2F" : "rgba(255,255,255,0.5)",
@@ -392,7 +392,7 @@ export function ShipSection() {
                     </span>
                     {/* Label — shown when active, fades in on hover */}
                     <span
-                      className={`absolute inset-0 flex items-center justify-center font-mono text-[13px] font-semibold tracking-wide transition-opacity duration-200 ${
+                      className={`absolute inset-0 flex items-center justify-center font-mono text-[11px] md:text-[13px] font-semibold tracking-wide transition-opacity duration-200 ${
                         active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                       }`}
                     >

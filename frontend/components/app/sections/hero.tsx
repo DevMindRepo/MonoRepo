@@ -20,20 +20,20 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(173,255,47,0.03)_0%,transparent_50%)]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-6 py-16 grid lg:grid-cols-2 gap-16 items-center w-full">
+      <div className="relative mx-auto max-w-7xl px-5 md:px-6 py-12 md:py-16 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
         {/* Left — text */}
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(173,255,47,0.2)] bg-[rgba(173,255,47,0.06)] px-3 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-[#ADFF2F] animate-pulse" />
             <span className="text-xs font-mono text-[#ADFF2F]">Walrus Hackathon 2025</span>
           </div>
 
-          <h1 className="text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
             Your AI finally{" "}
             <span className="gradient-text-mint">remembers.</span>
           </h1>
 
-          <p className="text-lg text-[#8B96A0] leading-relaxed max-w-md">
+          <p className="text-base md:text-lg text-[#8B96A0] leading-relaxed max-w-md">
             Persistent memory for Claude Code, Cursor, and Copilot. Your team&apos;s decisions,
             patterns, and context — recalled across sessions, across tools, across teammates.
           </p>
@@ -48,7 +48,7 @@ export function HeroSection() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-[#4B5563]">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs text-[#4B5563]">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ADFF2F]" />
               Encrypted with Seal
@@ -65,8 +65,8 @@ export function HeroSection() {
         </div>
 
         {/* Right — solar system */}
-        <div className="relative flex items-center justify-center">
-          <div className="h-[540px] w-[540px] max-w-full">
+        <div className="relative flex items-center justify-center order-first lg:order-last">
+          <div className="h-[280px] w-[280px] sm:h-[380px] sm:w-[380px] lg:h-[540px] lg:w-[540px]">
             <MemoryCore />
           </div>
         </div>

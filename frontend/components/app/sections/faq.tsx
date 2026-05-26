@@ -59,16 +59,16 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export function FaqSection() {
   return (
-    <section id="faq" className="py-24 px-6 border-t border-[rgba(255,255,255,0.04)]">
+    <section id="faq" className="py-16 md:py-24 px-4 md:px-6 border-t border-[rgba(255,255,255,0.04)]">
       <div className="mx-auto max-w-3xl">
         <ScrollReveal>
           <div className="text-center mb-12 space-y-3">
-            <p className="text-xs font-mono text-[#ADFF2F] uppercase tracking-widest">FAQ</p>
-            <h2 className="text-3xl font-bold tracking-tight">Common questions.</h2>
+            <p className="text-[13px] font-mono text-[#ADFF2F] uppercase tracking-[0.25em]">FAQ</p>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">Common questions.</h2>
           </div>
         </ScrollReveal>
         <ScrollReveal delay={90}>
-          <div className="rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] px-6">
+          <div className="rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] px-4 md:px-6">
             {FAQS.map((faq) => (
               <FaqItem key={faq.q} {...faq} />
             ))}

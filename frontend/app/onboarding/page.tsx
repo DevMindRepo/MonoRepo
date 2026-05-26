@@ -1,62 +1,26 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCurrentAccount } from "@mysten/dapp-kit"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Check, ExternalLink, Loader2 } from "lucide-react"
-import { cn, truncateAddress } from "@/lib/utils"
-import { workspacesApi } from "@/lib/api-endpoints"
+import { CodePill } from "@/components/ui/code-pill"
+import { Check, ExternalLink } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth"
-import { env } from "@/lib/env"
-import { ApiError } from "@/lib/api"
 
-const STEPS = ["Connect wallet", "Create workspace", "Continue"]
+const STEPS = ["Connect wallet", "Create workspace", "Connect AI tool"]
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const account = useCurrentAccount()
-  const { token, workspace, setWorkspace, hasHydrated } = useAuthStore()
-
   const [step, setStep] = React.useState(0)
   const [name, setName] = React.useState("")
-  const [creating, setCreating] = React.useState(false)
-  const [createdTxDigest, setCreatedTxDigest] = React.useState<string | null>(null)
-  const [createdSuiObjectId, setCreatedSuiObjectId] = React.useState<string | null>(null)
+  const { setWorkspace } = useAuthStore()
 
-  // Bounce if not authenticated yet.
-  React.useEffect(() => {
-    if (!hasHydrated) return
-    if (!token || !account) router.replace("/auth")
-  }, [hasHydrated, token, account, router])
-
-  // Already have a workspace? Skip to dashboard.
-  React.useEffect(() => {
-    if (workspace) router.replace("/dashboard")
-  }, [workspace, router])
-
-  // Auto-advance step 0 -> 1 once wallet + token are present.
-  React.useEffect(() => {
-    if (token && account && step === 0) setStep(1)
-  }, [token, account, step])
-
-  async function handleCreateWorkspace() {
-    if (!name.trim()) return
-    setCreating(true)
-    try {
-      const ws = await workspacesApi.create(name.trim())
-      setCreatedTxDigest(ws.txDigest ?? null)
-      setCreatedSuiObjectId(ws.suiObjectId)
-      setWorkspace({ id: ws.id, name: ws.name, suiObjectId: ws.suiObjectId })
-      toast.success(`Workspace "${ws.name}" deployed on-chain`)
-      setStep(2)
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Failed to create workspace"
-      toast.error(message)
-    } finally {
-      setCreating(false)
-    }
+  const handleDeploy = () => {
+    const wsId = `ws_${name.replace(/[^a-z0-9]/gi, "").toLowerCase()}_abc`
+    setWorkspace({ id: wsId, name, suiObjectId: "0x9a8b…1a0b" })
+    router.push("/dashboard")
   }
 
   return (
@@ -99,96 +63,62 @@ export default function OnboardingPage() {
           {step === 0 && (
             <>
               <h2 className="text-lg font-semibold text-[#E8EDF0]">Connect your Sui wallet</h2>
-              <p className="text-sm text-[#8B96A0]">Redirecting you to login…</p>
-              <Loader2 className="h-5 w-5 animate-spin text-[#ADFF2F] mx-auto" />
+              <p className="text-sm text-[#8B96A0]">Your workspace identity is anchored to your Sui address. No custody — you own the keys.</p>
+              <div className="rounded-[12px] border border-[rgba(173,255,47,0.15)] bg-[rgba(173,255,47,0.04)] p-4 font-mono text-xs text-[#ADFF2F]">
+                0x7f3a9b2c8d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#8B96A0]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#ADFF2F]" />
+                Sui Testnet · Balance: 10.5 SUI
+              </div>
+              <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(1)}>
+                Continue
+              </Button>
             </>
           )}
 
           {step === 1 && (
             <>
               <h2 className="text-lg font-semibold text-[#E8EDF0]">Create your workspace</h2>
-              <p className="text-sm text-[#8B96A0]">A Sui Move smart contract will be deployed to register your workspace on Sui {env.NEXT_PUBLIC_SUI_NETWORK}.</p>
-
-              {account && (
-                <div className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 flex items-center justify-between text-xs">
-                  <span className="text-[#4B5563]">Owner</span>
-                  <span className="font-mono text-[#ADFF2F]">{truncateAddress(account.address, 6)}</span>
-                </div>
-              )}
-
+              <p className="text-sm text-[#8B96A0]">A Sui Move smart contract will be deployed to register your workspace on Sui Testnet.</p>
               <div>
                 <label className="text-xs font-mono text-[#4B5563] uppercase tracking-wider block mb-1.5">Workspace name</label>
                 <input
                   placeholder="my-team"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  disabled={creating}
-                  className="w-full rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[#161D22] px-3 py-2.5 text-sm text-[#E8EDF0] placeholder:text-[#4B5563] focus:outline-none focus:border-[rgba(173,255,47,0.4)] transition-colors duration-200 disabled:opacity-50"
+                  className="w-full rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[#161D22] px-3 py-2.5 text-sm text-[#E8EDF0] placeholder:text-[#4B5563] focus:outline-none focus:border-[rgba(173,255,47,0.4)] transition-colors duration-200"
                 />
               </div>
-
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full gap-2"
-                onClick={handleCreateWorkspace}
-                disabled={!name.trim() || creating}
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Deploying on-chain…
-                  </>
-                ) : (
-                  "Deploy workspace contract"
-                )}
+              {name && (
+                <div className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between gap-2 flex-wrap">
+                    <span className="text-[#4B5563] shrink-0">Workspace ID</span>
+                    <span className="text-[#ADFF2F] truncate min-w-0">ws_{name.replace(/[^a-z0-9]/gi, '').toLowerCase()}_abc</span>
+                  </div>
+                  <div className="flex justify-between gap-2 flex-wrap">
+                    <span className="text-[#4B5563] shrink-0">Sui object</span>
+                    <span className="text-[#8B96A0] flex items-center gap-1 min-w-0">0x9a8b…1a0b <ExternalLink className="h-2.5 w-2.5 shrink-0" /></span>
+                  </div>
+                </div>
+              )}
+              <Button variant="primary" size="lg" className="w-full" onClick={handleDeploy} disabled={!name}>
+                Deploy workspace contract
               </Button>
             </>
           )}
 
           {step === 2 && (
             <>
-              <h2 className="text-lg font-semibold text-[#E8EDF0]">Workspace created</h2>
-              <p className="text-sm text-[#8B96A0]">Your workspace is anchored on Sui {env.NEXT_PUBLIC_SUI_NETWORK} and ready to receive memories.</p>
-
-              {createdSuiObjectId && (
-                <div className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 space-y-1.5 text-xs font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-[#4B5563]">Sui object</span>
-                    <a
-                      href={`${env.NEXT_PUBLIC_SUI_EXPLORER}/object/${createdSuiObjectId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#ADFF2F] flex items-center gap-1 hover:underline"
-                    >
-                      {truncateAddress(createdSuiObjectId, 6)}
-                      <ExternalLink className="h-2.5 w-2.5" />
-                    </a>
-                  </div>
-                  {createdTxDigest && (
-                    <div className="flex justify-between">
-                      <span className="text-[#4B5563]">Tx digest</span>
-                      <a
-                        href={`${env.NEXT_PUBLIC_SUI_EXPLORER}/tx/${createdTxDigest}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#8B96A0] flex items-center gap-1 hover:underline"
-                      >
-                        {truncateAddress(createdTxDigest, 6)}
-                        <ExternalLink className="h-2.5 w-2.5" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={() => router.replace("/dashboard")}
-              >
-                Open dashboard →
+              <h2 className="text-lg font-semibold text-[#E8EDF0]">Connect your AI tool</h2>
+              <p className="text-sm text-[#8B96A0]">Add DevMind to Claude Code in one step:</p>
+              <div className="space-y-2">
+                <CodePill code="npm install -g devmind" className="w-full" />
+                <p className="text-xs text-[#4B5563] font-mono pl-1">then add to ~/.claude.json:</p>
+                <CodePill code={`"devmind": { "command": "devmind", "env": { "DEVMIND_WORKSPACE": "ws_${name.replace(/[^a-z0-9]/gi,'').toLowerCase()}_abc" } }`} className="w-full" />
+              </div>
+              <Button asChild variant="primary" size="lg" className="w-full">
+                <Link href="/dashboard">Open dashboard →</Link>
               </Button>
             </>
           )}

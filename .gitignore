@@ -8,6 +8,8 @@ build/
 .next/
 .turbo/
 out/
+*.tsbuildinfo
+next-env.d.ts
 
 # Move build artifacts
 build/

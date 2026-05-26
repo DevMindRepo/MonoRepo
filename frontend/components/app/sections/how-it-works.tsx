@@ -68,13 +68,13 @@ export function HowItWorksSection() {
   }, [carouselApi])
 
   return (
-    <section id="how-it-works" className="py-24 border-t border-[rgba(255,255,255,0.04)]">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="how-it-works" className="py-16 md:py-24 border-t border-[rgba(255,255,255,0.04)] overflow-x-hidden">
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
         <ScrollReveal>
-          <div className="mb-12 flex items-end justify-between">
+          <div className="mb-12 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div className="space-y-3">
               <p className="text-xs font-mono text-[#ADFF2F] uppercase tracking-widest">How it works</p>
-              <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
                 Three steps. Zero friction.
               </h2>
               <p className="text-[#8B96A0] max-w-md">

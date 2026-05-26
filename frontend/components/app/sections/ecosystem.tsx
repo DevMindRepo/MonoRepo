@@ -32,14 +32,14 @@ const PANELS = [
 
 export function EcosystemSection() {
   return (
-    <section id="ecosystem" className="py-24 px-6" style={{ background: "#070B0E" }}>
+    <section id="ecosystem" className="py-16 md:py-24 px-4 md:px-6" style={{ background: "#070B0E" }}>
       <div className="mx-auto max-w-5xl">
 
         {/* ── Horizontal divider with label ── */}
         <ScrollReveal>
           <div className="flex items-center gap-4 mb-14">
             <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
-            <span className="text-[10px] font-mono text-[#ADFF2F] uppercase tracking-[0.2em] whitespace-nowrap">
+            <span className="text-[13px] font-mono text-[#ADFF2F] uppercase tracking-[0.25em] whitespace-nowrap">
               Built on
             </span>
             <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -49,7 +49,7 @@ export function EcosystemSection() {
         {/* ── Two-column header ── */}
         <ScrollReveal>
           <div className="grid md:grid-cols-2 gap-8 mb-12 items-end">
-            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-[#E8EDF0]">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-[#E8EDF0]">
               Walrus + Seal +{" "}
               <span className="gradient-text-mint">Sui</span>{" "}
               ecosystem

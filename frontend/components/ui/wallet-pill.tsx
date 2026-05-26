@@ -51,7 +51,7 @@ export function WalletPill({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 min-w-[180px] rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] p-1 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <div className="absolute right-0 top-full mt-2 min-w-[160px] max-w-[220px] rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] p-1 shadow-[0_8px_24px_rgba(0,0,0,0.4)] z-[60]">
           <div className="px-3 py-2 text-xs text-[#8B96A0] font-mono border-b border-[rgba(255,255,255,0.06)] mb-1">
             {truncateAddress(address, 6)}
           </div>
