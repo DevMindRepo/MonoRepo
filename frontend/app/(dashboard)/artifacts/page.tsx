@@ -26,7 +26,7 @@ const typeVariant: Record<string, "mint" | "blue" | "yellow" | "default"> = {
 
 export default function ArtifactsPage() {
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-5 w-full">
       <div>
         <h1 className="text-xl font-semibold text-[#E8EDF0]">Artifacts</h1>
         <p className="text-sm text-[#8B96A0] mt-0.5">Files saved by agents and workspace members</p>
@@ -41,7 +41,7 @@ export default function ArtifactsPage() {
       ) : (
         <>
         {/* Desktop table */}
-        <div className="hidden sm:block rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] overflow-hidden">
+        <div className="hidden sm:block rounded-[14px] overflow-hidden backdrop-blur-xl" style={{ background: "rgba(17,25,35,0.88)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 24px rgba(0,0,0,0.4)" }}>
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-[rgba(255,255,255,0.06)] text-[10px] font-mono text-[#4B5563] uppercase tracking-wider">
             <span>File</span>
             <span>Size</span>
@@ -96,7 +96,7 @@ export default function ArtifactsPage() {
             return (
               <div
                 key={id}
-                className="rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] p-4 space-y-3"
+                className="rounded-[14px] backdrop-blur-xl p-4 space-y-3" style={{ background: "rgba(17,25,35,0.88)", border: "1px solid rgba(255,255,255,0.09)" }}
               >
                 <div className="flex items-start gap-3">
                   <div className="h-9 w-9 rounded-[8px] bg-[rgba(255,255,255,0.04)] flex items-center justify-center text-[#8B96A0] shrink-0">

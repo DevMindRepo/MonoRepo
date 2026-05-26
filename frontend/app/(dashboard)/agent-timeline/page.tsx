@@ -43,7 +43,7 @@ const statusColor: Record<string, string> = {
 
 export default function AgentTimelinePage() {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-5 w-full">
       <div>
         <h1 className="text-xl font-semibold text-[#E8EDF0]">Agent Timeline</h1>
         <p className="text-sm text-[#8B96A0] mt-0.5">Autonomous agent execution history</p>
@@ -51,7 +51,7 @@ export default function AgentTimelinePage() {
 
       <div className="space-y-4">
         {RUNS.map((run) => (
-          <details key={run.id} className="group rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] overflow-hidden">
+          <details key={run.id} className="group rounded-[14px] overflow-hidden backdrop-blur-xl" style={{ background: "rgba(17,25,35,0.88)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 24px rgba(0,0,0,0.4)" }}>
             <summary className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-4 cursor-pointer list-none hover:bg-[rgba(255,255,255,0.02)] transition-colors duration-200">
               <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(96,165,250,0.1)] text-[#60A5FA] shrink-0">
                 <Bot className="h-4 w-4" />

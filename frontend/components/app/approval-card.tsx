@@ -76,11 +76,12 @@ export function ApprovalCard({
   return (
     <div
       className={cn(
-        "rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] overflow-hidden",
+        "rounded-[14px] border border-[rgba(255,255,255,0.09)] overflow-hidden backdrop-blur-xl",
         "transition-all duration-200",
         hasSecrets && "border-[rgba(244,114,182,0.2)]",
         className
       )}
+      style={{ background: "rgba(17,25,35,0.88)", boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset, 0 4px 20px rgba(0,0,0,0.4)" }}
     >
       {hasSecrets && (
         <div className="flex items-center gap-2 px-5 py-2.5 bg-[rgba(244,114,182,0.06)] border-b border-[rgba(244,114,182,0.15)]">

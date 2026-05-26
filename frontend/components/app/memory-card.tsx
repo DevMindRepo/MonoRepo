@@ -38,13 +38,14 @@ export function MemoryCard({ memory, onClick, selected, className }: MemoryCardP
     <button
       onClick={onClick}
       className={cn(
-        "group w-full text-left rounded-[14px] border bg-[#11181C] p-4 transition-all duration-200",
-        "hover:border-[rgba(173,255,47,0.2)] hover:bg-[#161D22]",
+        "group w-full text-left rounded-[14px] border backdrop-blur-xl p-4 transition-all duration-200",
+        "hover:border-[rgba(173,255,47,0.2)]",
         selected
-          ? "border-[rgba(173,255,47,0.35)] bg-[#161D22] shadow-[0_0_0_1px_rgba(173,255,47,0.15)]"
-          : "border-[rgba(255,255,255,0.06)]",
+          ? "border-[rgba(173,255,47,0.35)] shadow-[0_0_0_1px_rgba(173,255,47,0.15)]"
+          : "border-[rgba(255,255,255,0.09)]",
         className
       )}
+      style={{ background: "rgba(17,25,35,0.88)" }}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 flex-wrap">

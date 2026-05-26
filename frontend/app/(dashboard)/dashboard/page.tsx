@@ -1,232 +1,255 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
-import { Brain, CheckCircle, Clock, HardDrive, ArrowUpRight, Bot, UserPlus, Save } from "lucide-react"
+import Link from "next/link"
+import { Brain, CheckCircle, Clock, HardDrive, ArrowUpRight, Bot, UserPlus, Save, Activity, Zap } from "lucide-react"
 import { Chip } from "@/components/ui/chip"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/ui/empty-state"
 import { timeAgo } from "@/lib/utils"
-import { statsApi } from "@/lib/api-endpoints"
-import { useAuthStore } from "@/lib/store/auth"
-import type { ActivityEvent, MemoryType } from "@/lib/api-types"
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B"
-  const units = ["B", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
+const METRICS = [
+  {
+    icon: Brain,
+    label: "Total Memories",
+    value: "247",
+    change: "+12 this week",
+    color: "#ADFF2F",
+    colorBg: "rgba(173,255,47,0.08)",
+    colorBorder: "rgba(173,255,47,0.18)",
+    alert: false,
+  },
+  {
+    icon: CheckCircle,
+    label: "Pending Approval",
+    value: "3",
+    change: "review now",
+    color: "#F472B6",
+    colorBg: "rgba(244,114,182,0.08)",
+    colorBorder: "rgba(244,114,182,0.25)",
+    alert: true,
+    href: "/approval-queue",
+  },
+  {
+    icon: Clock,
+    label: "Agent Runs",
+    value: "18",
+    change: "this week",
+    color: "#60A5FA",
+    colorBg: "rgba(96,165,250,0.08)",
+    colorBorder: "rgba(96,165,250,0.18)",
+    alert: false,
+  },
+  {
+    icon: HardDrive,
+    label: "Walrus Storage",
+    value: "4.2 MB",
+    change: "247 blobs stored",
+    color: "#FBBF24",
+    colorBg: "rgba(251,191,36,0.08)",
+    colorBorder: "rgba(251,191,36,0.18)",
+    alert: false,
+  },
+]
+
+const ACTIVITY = [
+  { icon: Save, text: "Memory saved via Claude Code", sub: "decision: use pgvector for semantic search", time: new Date(Date.now() - 12 * 60000), type: "save" },
+  { icon: Bot, text: "PR Reviewer reviewed #249", sub: "Referenced 2 memories — auth-policy, api-versioning", time: new Date(Date.now() - 45 * 60000), type: "agent" },
+  { icon: CheckCircle, text: "3 memories approved", sub: "arch/db-schema, bug/hydration-mismatch, note/deploy-steps", time: new Date(Date.now() - 2 * 3600000), type: "approve" },
+  { icon: UserPlus, text: "alisa@example.com joined workspace", sub: "Invited via Sui address 0x4f2a…", time: new Date(Date.now() - 5 * 3600000), type: "member" },
+  { icon: Save, text: "Memory saved via Cursor", sub: "bug: React 19 hydration with Zustand SSR", time: new Date(Date.now() - 8 * 3600000), type: "save" },
+]
+
+const TYPE_STYLE: Record<string, { color: string; bg: string; border: string }> = {
+  save:    { color: "#ADFF2F", bg: "rgba(173,255,47,0.08)",   border: "rgba(173,255,47,0.15)" },
+  agent:   { color: "#60A5FA", bg: "rgba(96,165,250,0.08)",   border: "rgba(96,165,250,0.15)" },
+  approve: { color: "#FBBF24", bg: "rgba(251,191,36,0.08)",   border: "rgba(251,191,36,0.15)" },
+  member:  { color: "#F472B6", bg: "rgba(244,114,182,0.08)",  border: "rgba(244,114,182,0.15)" },
 }
 
-const activityIcon: Record<ActivityEvent["type"], { icon: typeof Save; cls: string }> = {
-  memory_saved: { icon: Save, cls: "text-[#ADFF2F] bg-[rgba(173,255,47,0.1)]" },
-  agent_run: { icon: Bot, cls: "text-[#60A5FA] bg-[rgba(96,165,250,0.1)]" },
-  member_joined: { icon: UserPlus, cls: "text-[#F472B6] bg-[rgba(244,114,182,0.1)]" },
-}
+const QUICK_ACTIONS = [
+  { label: "Review pending memories", tag: "3 waiting", href: "/approval-queue", color: "#F472B6", bg: "rgba(244,114,182,0.08)" },
+  { label: "Browse all memories", tag: "247 total", href: "/memories", color: "#60A5FA", bg: "rgba(96,165,250,0.08)" },
+  { label: "Connect new AI tool", tag: "MCP setup", href: "/connect", color: "#ADFF2F", bg: "rgba(173,255,47,0.08)" },
+]
+
+const glass = {
+  background: "rgba(17,25,35,0.88)",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 32px rgba(0,0,0,0.5)",
+} as React.CSSProperties
 
 export default function DashboardPage() {
-  const workspace = useAuthStore((s) => s.workspace)
-  const workspaceId = workspace?.id
-
-  const stats = useQuery({
-    queryKey: ["stats", workspaceId],
-    queryFn: () => statsApi.workspace(workspaceId!),
-    enabled: !!workspaceId,
-  })
-
-  const activity = useQuery({
-    queryKey: ["activity", workspaceId],
-    queryFn: () => statsApi.activity(workspaceId!, 20),
-    enabled: !!workspaceId,
-  })
-
-  const metrics = stats.data
-    ? [
-        {
-          icon: Brain,
-          label: "Total Memories",
-          value: String(stats.data.totalMemories),
-          change: `+${stats.data.memoriesThisWeek} this week`,
-          color: "text-[#ADFF2F]",
-          bg: "bg-[rgba(173,255,47,0.08)]",
-        },
-        {
-          icon: CheckCircle,
-          label: "Pending Approval",
-          value: String(stats.data.pendingCount),
-          change: stats.data.pendingCount > 0 ? "review now" : "all clear",
-          color: "text-[#F472B6]",
-          bg: "bg-[rgba(244,114,182,0.08)]",
-          alert: stats.data.pendingCount > 0,
-        },
-        {
-          icon: Clock,
-          label: "Agent Runs",
-          value: String(stats.data.agentRunsTotal),
-          change: `${stats.data.agentRunsThisWeek} this week`,
-          color: "text-[#60A5FA]",
-          bg: "bg-[rgba(96,165,250,0.08)]",
-        },
-        {
-          icon: HardDrive,
-          label: "Walrus Storage",
-          value: formatBytes(stats.data.walrusStorageBytes),
-          change: `across ${stats.data.artifactsCount} blobs`,
-          color: "text-[#FBBF24]",
-          bg: "bg-[rgba(251,191,36,0.08)]",
-        },
-      ]
-    : []
-
-  const typeChips: { type: MemoryType; variant: "mint" | "blue" | "red" | "default" }[] = [
-    { type: "decision", variant: "mint" },
-    { type: "arch", variant: "blue" },
-    { type: "bug", variant: "red" },
-    { type: "note", variant: "default" },
-  ]
-
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-xl font-semibold text-[#E8EDF0]">Overview</h1>
-        <p className="text-sm text-[#8B96A0] mt-0.5">Your workspace at a glance</p>
+    <div className="space-y-5 w-full">
+      {/* Welcome header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#E8EDF0]">Overview</h1>
+          <p className="mt-0.5 text-sm text-[#8B96A0]">Your workspace at a glance</p>
+        </div>
+        <div
+          className="hidden sm:flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5"
+          style={{ background: "rgba(173,255,47,0.06)", border: "1px solid rgba(173,255,47,0.2)" }}
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full bg-[#ADFF2F]"
+            style={{ boxShadow: "0 0 8px #ADFF2F" }}
+          />
+          <span className="text-xs font-mono text-[#ADFF2F]">MCP Active</span>
+        </div>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.isLoading
-          ? [...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C] p-4 space-y-3">
-                <Skeleton className="h-9 w-9 rounded-[10px]" />
-                <Skeleton className="h-7 w-12" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            ))
-          : metrics.map(({ icon: Icon, label, value, change, color, bg, alert }) => (
-              <div
-                key={label}
-                className={`rounded-[14px] border bg-[#11181C] p-4 space-y-3 ${alert ? "border-[rgba(244,114,182,0.2)]" : "border-[rgba(255,255,255,0.06)]"}`}
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${bg} ${color}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-[#E8EDF0] tracking-tight">{value}</div>
-                  <div className="text-xs text-[#8B96A0]">{label}</div>
-                </div>
-                <div className={`text-xs font-mono ${alert ? "text-[#F472B6]" : "text-[#4B5563]"}`}>
-                  {change}
-                  {alert && <ArrowUpRight className="inline h-3 w-3 ml-0.5" />}
-                </div>
-              </div>
-            ))}
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Activity */}
-        <div className="lg:col-span-2 rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-sm font-semibold text-[#E8EDF0]">Recent activity</h2>
+      {/* Metric cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {METRICS.map(({ icon: Icon, label, value, change, color, colorBg, colorBorder, alert, href }) => (
+          <div
+            key={label}
+            className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.01]"
+            style={{
+              ...glass,
+              ...(alert ? { border: `1px solid ${colorBorder}` } : {}),
+            }}
+          >
+            {/* Top accent line */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[2px]"
+              style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)`, opacity: 0.5 }}
+            />
+            {/* Hover radial glow */}
+            <div
+              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              style={{ background: `radial-gradient(ellipse at top left, ${colorBg}, transparent 65%)` }}
+            />
+            {/* Icon */}
+            <div
+              className="relative mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+              style={{ background: colorBg, border: `1px solid ${colorBorder}` }}
+            >
+              <Icon className="h-5 w-5" style={{ color }} />
+            </div>
+            {/* Value */}
+            <div className="relative text-[26px] font-bold tracking-tight text-[#E8EDF0] leading-none">{value}</div>
+            <div className="relative mt-1 text-xs text-[#8B96A0]">{label}</div>
+            {/* Change */}
+            <div className="relative mt-3 flex items-center gap-1">
+              <span className="text-[11px] font-mono" style={{ color: alert ? color : "#4B5563" }}>
+                {change}
+              </span>
+              {alert && <ArrowUpRight className="h-3 w-3" style={{ color }} />}
+            </div>
           </div>
+        ))}
+      </div>
 
-          {activity.isLoading ? (
-            <div className="p-5 space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex gap-3">
-                  <Skeleton className="h-7 w-7 rounded-[8px]" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-3 w-40" />
-                    <Skeleton className="h-2.5 w-56" />
+      {/* Main content grid */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Activity feed */}
+        <div className="lg:col-span-2 overflow-hidden rounded-2xl" style={glass}>
+          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg" style={{ background: "rgba(173,255,47,0.1)" }}>
+                <Activity className="h-3.5 w-3.5 text-[#ADFF2F]" />
+              </div>
+              <h2 className="text-sm font-semibold text-[#E8EDF0]">Recent activity</h2>
+            </div>
+            <Link href="/memories" className="text-xs font-mono text-[#ADFF2F] hover:underline transition-opacity hover:opacity-80">
+              View all →
+            </Link>
+          </div>
+          <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+            {ACTIVITY.map(({ icon: Icon, text, sub, time, type }, i) => {
+              const s = TYPE_STYLE[type]
+              return (
+                <div
+                  key={i}
+                  className="flex gap-3.5 px-5 py-3.5 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.02)]"
+                >
+                  <div
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
+                    style={{ background: s.bg, border: `1px solid ${s.border}` }}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-[#E8EDF0]">{text}</p>
+                    <p className="mt-0.5 text-xs text-[#8B96A0] truncate">{sub}</p>
+                  </div>
+                  <span className="mt-0.5 shrink-0 text-[10px] font-mono text-[#4B5563]">{timeAgo(time)}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-4">
+          {/* Memory health */}
+          <div className="overflow-hidden rounded-2xl" style={glass}>
+            <div className="flex items-center gap-2.5 border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg" style={{ background: "rgba(173,255,47,0.1)" }}>
+                <Zap className="h-3.5 w-3.5 text-[#ADFF2F]" />
+              </div>
+              <h2 className="text-sm font-semibold text-[#E8EDF0]">Memory health</h2>
+            </div>
+            <div className="space-y-4 p-5">
+              {/* Bars */}
+              {[
+                { label: "Approved", value: 244, total: 247, color: "#ADFF2F", colorFade: "rgba(173,255,47,0.5)" },
+                { label: "Pending",  value: 3,   total: 247, color: "#F472B6", colorFade: "rgba(244,114,182,0.5)" },
+              ].map(({ label, value, total, color, colorFade }) => (
+                <div key={label} className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#8B96A0]">{label}</span>
+                    <span className="font-mono" style={{ color }}>{value}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.max((value / total) * 100, 2)}%`,
+                        background: `linear-gradient(90deg, ${color}, ${colorFade})`,
+                        boxShadow: `0 0 8px ${color}55`,
+                      }}
+                    />
                   </div>
                 </div>
               ))}
-            </div>
-          ) : activity.data && activity.data.length > 0 ? (
-            <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-              {activity.data.map((event) => {
-                const meta = activityIcon[event.type]
-                const Icon = meta.icon
-                return (
-                  <div key={`${event.type}-${event.id}`} className="flex gap-3 px-5 py-3.5">
-                    <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] ${meta.cls}`}>
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-[#E8EDF0]">{event.text}</p>
-                      <p className="text-xs text-[#8B96A0] truncate">{event.sub}</p>
-                    </div>
-                    <span className="shrink-0 text-[10px] font-mono text-[#4B5563]">{timeAgo(event.timestamp)}</span>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="p-5">
-              <EmptyState
-                icon={<Brain className="h-6 w-6" />}
-                title="No activity yet"
-                description="Save your first memory via Claude Code or Cursor to see activity here."
-              />
-            </div>
-          )}
-        </div>
 
-        {/* Memory health */}
-        <div className="rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[#11181C]">
-          <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-sm font-semibold text-[#E8EDF0]">Memory health</h2>
+              <div className="space-y-2 pt-1">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563]">By type</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <Chip variant="mint" dot>decision · 89</Chip>
+                  <Chip variant="blue" dot>arch · 67</Chip>
+                  <Chip variant="red" dot>bug · 52</Chip>
+                  <Chip variant="default" dot>note · 39</Chip>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="p-5 space-y-4">
-            {stats.isLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : stats.data ? (
-              <>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#8B96A0]">Approved</span>
-                    <span className="font-mono text-[#ADFF2F]">{stats.data.totalMemories}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.06)]">
-                    <div
-                      className="h-full rounded-full bg-[#ADFF2F]"
-                      style={{
-                        width:
-                          stats.data.totalMemories + stats.data.pendingCount > 0
-                            ? `${(stats.data.totalMemories / (stats.data.totalMemories + stats.data.pendingCount)) * 100}%`
-                            : "0%",
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#8B96A0]">Pending</span>
-                    <span className="font-mono text-[#F472B6]">{stats.data.pendingCount}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.06)]">
-                    <div
-                      className="h-full rounded-full bg-[#F472B6]"
-                      style={{
-                        width:
-                          stats.data.totalMemories + stats.data.pendingCount > 0
-                            ? `${(stats.data.pendingCount / (stats.data.totalMemories + stats.data.pendingCount)) * 100}%`
-                            : "0%",
-                      }}
-                    />
-                  </div>
-                </div>
 
-                <div className="pt-2 space-y-2">
-                  <p className="text-[10px] font-mono text-[#8B96A0] uppercase tracking-wider">By type</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {typeChips.map(({ type, variant }) => (
-                      <Chip key={type} variant={variant} dot>
-                        {type} · {stats.data!.byType[type] ?? 0}
-                      </Chip>
-                    ))}
+          {/* Quick actions */}
+          <div className="overflow-hidden rounded-2xl" style={glass}>
+            <div className="border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+              <h2 className="text-sm font-semibold text-[#E8EDF0]">Quick actions</h2>
+            </div>
+            <div className="p-3 space-y-1">
+              {QUICK_ACTIONS.map(({ label, tag, href, color, bg }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="group flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-150 hover:bg-[rgba(255,255,255,0.04)]"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                    <span className="text-xs text-[#8B96A0] group-hover:text-[#E8EDF0] transition-colors duration-150 truncate">{label}</span>
                   </div>
-                </div>
-              </>
-            ) : null}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-[10px] font-mono" style={{ color }}>{tag}</span>
+                    <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ color }} />
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

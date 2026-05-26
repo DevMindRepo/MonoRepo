@@ -88,7 +88,7 @@ export default function ApprovalQueuePage() {
   const hasSecrets = items.some((m) => (m.secrets?.length ?? 0) > 0)
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-5 w-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-[#E8EDF0]">Approval Queue</h1>
