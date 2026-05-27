@@ -31,8 +31,8 @@ await mcp.call('get_memory', {
 
 export function CodeSection() {
   return (
-    <section className="py-16 md:py-24 px-4 md:px-6 border-t border-[rgba(255,255,255,0.04)]">
-      <div className="mx-auto max-w-7xl">
+    <section className="py-16 md:py-24 px-4 md:px-6 border-t border-[rgba(255,255,255,0.04)] overflow-x-hidden">
+      <div className="mx-auto max-w-7xl min-w-0">
         <ScrollReveal>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -48,7 +48,7 @@ export function CodeSection() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0 overflow-hidden">
               <div className="rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[#0D1317] overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
                   <span className="h-2.5 w-2.5 rounded-full bg-[rgba(248,113,113,0.6)]" />
