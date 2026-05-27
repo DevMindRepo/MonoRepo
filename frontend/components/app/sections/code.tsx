@@ -37,7 +37,7 @@ export function CodeSection() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <p className="text-xs font-mono text-[#ADFF2F] uppercase tracking-widest">Integration</p>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">Two lines to get started.</h2>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">Two lines to get started.</h2>
               <p className="text-[#8B96A0] leading-relaxed">
                 Install, add to your MCP config, and your AI tools have persistent memory. No
                 refactoring. No SDK to learn.

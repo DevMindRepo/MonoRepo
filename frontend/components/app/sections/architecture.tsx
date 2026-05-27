@@ -35,6 +35,7 @@ export function ArchitectureSection() {
       `}</style>
 
       <section
+        id="architecture"
         className="py-16 md:py-24 px-4 md:px-6"
         style={{ background: "#050A0E", borderTop: "1px solid rgba(255,255,255,0.04)" }}
       >

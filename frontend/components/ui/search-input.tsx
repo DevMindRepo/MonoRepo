@@ -43,10 +43,15 @@ export function SearchInput({
       <input
         type="search"
         value={value}
+        style={{
+          background: "rgba(17,25,35,0.88)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
         className={cn(
-          "w-full rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[#11181C] text-[#E8EDF0] placeholder:text-[#4B5563] transition-all duration-200",
-          "focus:outline-none focus:border-[rgba(173,255,47,0.4)] focus:bg-[#161D22] focus:shadow-[0_0_0_1px_rgba(173,255,47,0.15)]",
-          "hover:border-[rgba(255,255,255,0.12)]",
+          "w-full rounded-[12px] border border-[rgba(255,255,255,0.09)] text-[#E8EDF0] placeholder:text-[#4B5563] transition-all duration-200",
+          "focus:outline-none focus:border-[rgba(173,255,47,0.4)] focus:shadow-[0_0_0_1px_rgba(173,255,47,0.15),_0_0_24px_rgba(173,255,47,0.06)]",
+          "hover:border-[rgba(255,255,255,0.14)]",
           "[&::-webkit-search-cancel-button]:hidden",
           sizeClasses[size],
           className

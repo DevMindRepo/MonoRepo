@@ -1,12 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Brain, Filter, LayoutGrid, List, Search, X } from "lucide-react"
+import { Filter, LayoutGrid, List, Search, Trash2, X } from "lucide-react"
+import { toast } from "sonner"
 import { Chip, memoryTypeVariant } from "@/components/ui/chip"
 import { MemoryCard, type Memory } from "@/components/app/memory-card"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MemoryCardSkeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { cn, timeAgo } from "@/lib/utils"
 
 const MOCK_MEMORIES: Memory[] = [
@@ -21,42 +23,50 @@ const MOCK_MEMORIES: Memory[] = [
 const TYPES = ["all", "decision", "bug", "arch", "note"] as const
 const PRIVACY = ["all", "private", "team", "public"] as const
 
-const TYPE_COUNTS = {
-  decision: MOCK_MEMORIES.filter(m => m.type === "decision").length,
-  bug: MOCK_MEMORIES.filter(m => m.type === "bug").length,
-  arch: MOCK_MEMORIES.filter(m => m.type === "arch").length,
-  note: MOCK_MEMORIES.filter(m => m.type === "note").length,
-}
-
 const glass = {
   background: "rgba(17,25,35,0.88)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
   border: "1px solid rgba(255,255,255,0.09)",
   boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 20px rgba(0,0,0,0.4)",
 } as React.CSSProperties
 
 export default function MemoriesPage() {
+  const [memories, setMemories] = React.useState<Memory[]>(MOCK_MEMORIES)
   const [query, setQuery] = React.useState("")
   const [typeFilter, setTypeFilter] = React.useState<(typeof TYPES)[number]>("all")
   const [privacyFilter, setPrivacyFilter] = React.useState<(typeof PRIVACY)[number]>("all")
   const [view, setView] = React.useState<"grid" | "list">("grid")
   const [loading, setLoading] = React.useState(true)
   const [selected, setSelected] = React.useState<string | null>(null)
+  const [deleteId, setDeleteId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 700)
     return () => clearTimeout(t)
   }, [])
 
-  const filtered = MOCK_MEMORIES.filter((m) => {
+  const typeCounts = React.useMemo(() => ({
+    decision: memories.filter(m => m.type === "decision").length,
+    bug: memories.filter(m => m.type === "bug").length,
+    arch: memories.filter(m => m.type === "arch").length,
+    note: memories.filter(m => m.type === "note").length,
+  }), [memories])
+
+  const filtered = memories.filter((m) => {
     if (typeFilter !== "all" && m.type !== typeFilter) return false
     if (privacyFilter !== "all" && m.privacy !== privacyFilter) return false
     if (query && !m.content.toLowerCase().includes(query.toLowerCase()) && !m.tags.some(t => t.includes(query.toLowerCase()))) return false
     return true
   })
 
-  const selectedMemory = MOCK_MEMORIES.find((m) => m.id === selected)
+  const selectedMemory = memories.find((m) => m.id === selected)
+
+  const handleDelete = (id: string) => {
+    setMemories((prev) => prev.filter((m) => m.id !== id))
+    setSelected(null)
+    toast.success("Memory deleted", { description: "Removed from your workspace" })
+  }
 
   return (
     <div className="flex flex-col gap-5 h-full w-full">
@@ -64,7 +74,7 @@ export default function MemoriesPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#E8EDF0]">Memories</h1>
-          <p className="mt-0.5 text-sm text-[#8B96A0]">{MOCK_MEMORIES.length} stored · encrypted on Walrus</p>
+          <p className="mt-0.5 text-sm text-[#8B96A0]">{memories.length} stored · encrypted on Walrus</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -98,6 +108,8 @@ export default function MemoriesPage() {
             className="w-full rounded-[12px] py-2.5 pl-10 pr-10 text-sm text-[#E8EDF0] placeholder:text-[#4B5563] focus:outline-none transition-all duration-200"
             style={{
               background: "rgba(17,25,35,0.88)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
               border: query ? "1px solid rgba(173,255,47,0.3)" : "1px solid rgba(255,255,255,0.09)",
             }}
           />
@@ -124,7 +136,7 @@ export default function MemoriesPage() {
               style={typeFilter === t ? { background: "rgba(173,255,47,0.1)", borderColor: "rgba(173,255,47,0.25)" } : { background: "rgba(255,255,255,0.04)" }}
             >
               {t}
-              {t !== "all" && <span className="opacity-50">{TYPE_COUNTS[t as keyof typeof TYPE_COUNTS]}</span>}
+              {t !== "all" && <span className="opacity-50">{typeCounts[t as keyof typeof typeCounts]}</span>}
             </button>
           ))}
           <span className="text-[rgba(255,255,255,0.12)]">·</span>
@@ -156,7 +168,7 @@ export default function MemoriesPage() {
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
-              icon={<Brain className="h-6 w-6" />}
+              image="/empty-memories.png"
               title="No memories found"
               description={query ? `No results for "${query}". Try different keywords or remove filters.` : "No memories match the current filters."}
             />
@@ -176,7 +188,7 @@ export default function MemoriesPage() {
 
         {/* Detail panel */}
         {selectedMemory && (
-          <div className="lg:w-72 xl:w-80 shrink-0 w-full rounded-2xl p-5 lg:sticky lg:top-0 space-y-4" style={glass}>
+          <div className="relative lg:w-72 xl:w-80 shrink-0 w-full rounded-2xl p-5 lg:sticky lg:top-0 lg:self-start space-y-4 overflow-hidden" style={glass}>
             {/* Top accent */}
             <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, transparent, rgba(173,255,47,0.5), transparent)" }} />
 
@@ -203,8 +215,8 @@ export default function MemoriesPage() {
               <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563]">Tags</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedMemory.tags.map((tag) => (
-                  <span key={tag} className="text-[10px] font-mono text-[#8B96A0] rounded-md px-1.5 py-0.5"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span key={tag} className="text-[10px] font-mono text-[#ADFF2F] rounded-md px-1.5 py-0.5"
+                    style={{ background: "rgba(173,255,47,0.08)", border: "1px solid rgba(173,255,47,0.18)" }}>
                     #{tag}
                   </span>
                 ))}
@@ -215,9 +227,27 @@ export default function MemoriesPage() {
               <span>by {selectedMemory.author}</span>
               <span>{timeAgo(selectedMemory.createdAt)}</span>
             </div>
+            <button
+              onClick={() => setDeleteId(selectedMemory.id)}
+              className="w-full flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-xs font-medium text-[#F87171] hover:bg-[rgba(248,113,113,0.1)] transition-colors duration-150"
+              style={{ border: "1px solid rgba(248,113,113,0.18)" }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete memory
+            </button>
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Delete this memory?"
+        description="The blob will be marked for deletion on Walrus. This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => { if (deleteId) handleDelete(deleteId); setDeleteId(null) }}
+      />
     </div>
   )
 }

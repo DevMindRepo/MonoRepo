@@ -1,15 +1,10 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
-import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { CodePill } from "@/components/ui/code-pill"
 import { Play } from "lucide-react"
-
-const MemoryCore = dynamic(
-  () => import("@/components/app/memory-core").then((m) => m.MemoryCore),
-  { ssr: false }
-)
 
 export function HeroSection() {
   return (
@@ -23,11 +18,6 @@ export function HeroSection() {
       <div className="relative mx-auto max-w-7xl px-5 md:px-6 py-12 md:py-16 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
         {/* Left — text */}
         <div className="space-y-6 md:space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(173,255,47,0.2)] bg-[rgba(173,255,47,0.06)] px-3 py-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#ADFF2F] animate-pulse" />
-            <span className="text-xs font-mono text-[#ADFF2F]">Walrus Hackathon 2025</span>
-          </div>
-
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
             Your AI finally{" "}
             <span className="gradient-text-mint">remembers.</span>
@@ -48,26 +38,38 @@ export function HeroSection() {
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs text-[#4B5563]">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ADFF2F]" />
-              Encrypted with Seal
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ADFF2F]" />
-              Stored on Walrus
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ADFF2F]" />
-              Anchored on Sui
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { logo: "/ecosystem-seal.png", label: "Encrypted with Seal" },
+              { logo: "/ecosystem-walrus.png", label: "Stored on Walrus" },
+              { logo: "/ecosystem-sui.png", label: "Anchored on Sui" },
+            ].map(({ logo, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-[#C8D0D8] transition-colors duration-200 hover:text-[#E8EDF0]"
+                style={{
+                  background: "rgba(17,25,35,0.7)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                }}
+              >
+                <Image src={logo} alt={label} width={16} height={16} className="h-4 w-4 rounded-full object-cover" />
+                {label}
+              </span>
+            ))}
           </div>
         </div>
 
         {/* Right — solar system */}
         <div className="relative flex items-center justify-center order-first lg:order-last">
-          <div className="h-[280px] w-[280px] sm:h-[380px] sm:w-[380px] lg:h-[540px] lg:w-[540px]">
-            <MemoryCore />
+          <div className="relative h-[320px] w-[320px] sm:h-[440px] sm:w-[440px] lg:h-[620px] lg:w-[620px]">
+            <Image
+              src="/solar-system-new.png"
+              alt="DevMind memory network"
+              fill
+              className="object-contain"
+              style={{ filter: "drop-shadow(0 0 40px rgba(173,255,47,0.5)) drop-shadow(0 0 100px rgba(173,255,47,0.2))" }}
+              priority
+            />
           </div>
         </div>
       </div>

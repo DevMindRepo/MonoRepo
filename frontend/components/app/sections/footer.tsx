@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CodePill } from "@/components/ui/code-pill"
@@ -10,7 +11,7 @@ export function FooterSection() {
       {/* CTA */}
       <ScrollReveal>
         <div className="py-12 md:py-20 px-4 md:px-6 text-center space-y-6 border-b border-[rgba(255,255,255,0.04)]">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">Ready to give your AI a memory?</h2>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">Ready to give your AI a memory?</h2>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <CodePill code="npm create devmind" />
             <Button asChild variant="secondary" size="md">
@@ -22,32 +23,27 @@ export function FooterSection() {
 
       {/* Links */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-8 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="h-6 w-6 rounded-[6px] bg-gradient-to-br from-[#ADFF2F] to-[#ADFF2F] flex items-center justify-center">
-            <span className="text-[#070B0E] font-bold font-mono text-[10px]">D</span>
-          </div>
-          <span className="text-sm font-semibold text-[#E8EDF0]">DevMind</span>
+        <div className="flex items-center gap-1.5">
+          <Image src="/icon-512.png" alt="DevMind" width={24} height={24} className="h-6 w-6 rounded-[6px]" quality={100} />
+          <span className="text-sm font-bold text-[#E8EDF0] tracking-[-0.02em]">DevMind</span>
         </div>
 
         <nav className="flex flex-wrap gap-5">
           {[
             { href: "#", label: "Docs" },
-            { href: "https://github.com", label: "GitHub" },
+            { href: "https://github.com/DevMindRepo/MonoRepo", label: "GitHub" },
             { href: "#", label: "Demo video" },
           ].map(({ href, label }) => (
             <Link
               key={label}
               href={href}
-              className="text-sm text-[#4B5563] hover:text-[#8B96A0] transition-colors duration-200"
+              className="text-sm text-[#8B96A0] hover:text-[#E8EDF0] transition-colors duration-200"
             >
               {label}
             </Link>
           ))}
         </nav>
 
-        <p className="text-xs text-[#4B5563]">
-          Built for the Walrus Hackathon · 2025
-        </p>
       </div>
     </footer>
   )

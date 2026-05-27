@@ -14,7 +14,7 @@ const buttonVariants = cva(
         primary:
           "bg-[#ADFF2F] text-[#070B0E] font-semibold hover:bg-[#90D400] hover:shadow-[0_0_20px_rgba(173,255,47,0.3)] active:scale-[0.98]",
         secondary:
-          "border border-[rgba(173,255,47,0.3)] text-[#ADFF2F] bg-transparent hover:bg-[rgba(173,255,47,0.08)] hover:border-[rgba(173,255,47,0.5)] active:scale-[0.98]",
+          "border border-[rgba(173,255,47,0.4)] text-[#ADFF2F] bg-[rgba(173,255,47,0.07)] hover:bg-[rgba(173,255,47,0.13)] hover:border-[rgba(173,255,47,0.6)] hover:shadow-[0_0_16px_rgba(173,255,47,0.1)] active:scale-[0.98]",
         ghost:
           "text-[#8B96A0] hover:text-[#E8EDF0] hover:bg-[rgba(255,255,255,0.06)] active:scale-[0.98]",
         destructive:

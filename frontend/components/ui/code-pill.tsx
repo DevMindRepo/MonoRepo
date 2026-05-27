@@ -23,7 +23,7 @@ export function CodePill({ code, className, label }: CodePillProps) {
     <button
       onClick={handleCopy}
       className={cn(
-        "group inline-flex items-center gap-3 rounded-[10px] border border-[rgba(173,255,47,0.2)] bg-[rgba(173,255,47,0.05)] px-4 py-2.5 transition-all duration-200 hover:border-[rgba(173,255,47,0.4)] hover:bg-[rgba(173,255,47,0.08)] active:scale-[0.99] cursor-pointer max-w-full overflow-hidden",
+        "group inline-flex items-center gap-3 rounded-[10px] border border-[rgba(173,255,47,0.35)] bg-[rgba(8,14,20,0.88)] px-4 py-2.5 transition-all duration-200 hover:border-[rgba(173,255,47,0.55)] hover:bg-[rgba(12,20,28,0.95)] hover:shadow-[0_0_16px_rgba(173,255,47,0.08)] active:scale-[0.99] cursor-pointer max-w-full overflow-hidden",
         className
       )}
       aria-label={`Copy: ${code}`}

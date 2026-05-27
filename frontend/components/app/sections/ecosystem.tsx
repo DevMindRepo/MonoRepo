@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image"
-import { ArrowUpRight } from "lucide-react"
+
 import { ScrollReveal } from "@/components/app/scroll-reveal"
 
 const PANELS = [
@@ -93,7 +93,7 @@ export function EcosystemSection() {
 
                   {/* Label row */}
                   <div
-                    className="flex items-start justify-between gap-3 p-5"
+                    className="p-5"
                     style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
                   >
                     <div className="space-y-1.5">
@@ -104,7 +104,6 @@ export function EcosystemSection() {
                         {description}
                       </p>
                     </div>
-                    <ArrowUpRight className="h-4 w-4 shrink-0 mt-0.5 text-[#4B5563] group-hover:text-[#ADFF2F] transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </div>
                 </div>
               ))}
@@ -112,12 +111,6 @@ export function EcosystemSection() {
           </div>
         </ScrollReveal>
 
-        {/* ── Footnote ── */}
-        <ScrollReveal delay={240}>
-          <p className="text-center text-xs text-[#4B5563] mt-8">
-            Built for the Walrus Hackathon track · Sui Testnet · Walrus Testnet
-          </p>
-        </ScrollReveal>
 
       </div>
     </section>

@@ -130,6 +130,39 @@ body {
   border-radius: var(--radius-md);
 }
 
+/* Radix Dialog animations */
+@keyframes dm-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dm-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dm-content-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes dm-content-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+}
+
+[data-slot="dialog-overlay"][data-state="open"],
+div[data-state="open"][aria-hidden="true"].fixed.inset-0 {
+  animation: dm-overlay-in 180ms ease-out;
+}
+[data-slot="dialog-overlay"][data-state="closed"],
+div[data-state="closed"][aria-hidden="true"].fixed.inset-0 {
+  animation: dm-overlay-out 150ms ease-in forwards;
+}
+div[role="dialog"][data-state="open"] {
+  animation: dm-content-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+div[role="dialog"][data-state="closed"] {
+  animation: dm-content-out 150ms ease-in forwards;
+}
+
 /* Memory core pulse */
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.6; transform: scale(1); }

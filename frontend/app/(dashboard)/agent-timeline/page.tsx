@@ -1,5 +1,9 @@
-import { Bot, GitPullRequest, Brain, MessageSquare, Save, Clock } from "lucide-react"
+"use client"
+
+import * as React from "react"
+import { Bot, GitPullRequest, Brain, MessageSquare, Save, Clock, ChevronDown } from "lucide-react"
 import { Chip } from "@/components/ui/chip"
+import { TimelineEventSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 
 const RUNS = [
@@ -41,108 +45,152 @@ const statusColor: Record<string, string> = {
   failed: "text-[#F87171] bg-[rgba(248,113,113,0.1)]",
 }
 
+const iconBox = "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
+const iconStyle = { background: "rgba(255,255,255,0.04)" }
+const iconCls = "h-3.5 w-3.5 text-[#8B96A0]"
+
+function RunCard({ run }: { run: (typeof RUNS)[number] }) {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <div
+      className="rounded-[14px] overflow-hidden backdrop-blur-xl"
+      style={{ background: "rgba(17,25,35,0.88)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 24px rgba(0,0,0,0.4)" }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-4 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors duration-200 text-left"
+      >
+        <div className={iconBox} style={iconStyle}>
+          <Bot className={iconCls} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-[#E8EDF0]">PR Reviewer</span>
+            <Chip variant="blue" dot><span className="truncate max-w-[160px] sm:max-w-none">{run.pr}</span></Chip>
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs text-[#8B96A0]">
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {run.time}
+            </span>
+            {run.memoriesQueried.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Brain className="h-3 w-3" />
+                {run.memoriesQueried.length} memories recalled
+              </span>
+            )}
+          </div>
+        </div>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-mono ${statusColor[run.status]}`}>
+          {run.status}
+        </span>
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-[#8B96A0] transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+
+      {open && (
+        <div className="border-t border-[rgba(255,255,255,0.06)] px-4 sm:px-5 py-4 space-y-4">
+          {/* PR */}
+          <div className="flex items-start gap-3">
+            <div className={iconBox} style={iconStyle}>
+              <GitPullRequest className={iconCls} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-mono text-[#8B96A0]">Pull request</p>
+              <p className="text-sm text-[#E8EDF0] break-words">{run.pr}</p>
+            </div>
+          </div>
+
+          {/* Memories */}
+          {run.memoriesQueried.length > 0 && (
+            <div className="flex items-start gap-3">
+              <div className={iconBox} style={iconStyle}>
+                <Brain className={iconCls} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs font-mono text-[#8B96A0]">Memories recalled</p>
+                {run.memoriesQueried.map((m) => (
+                  <span key={m} className="block text-xs font-mono text-[#ADFF2F] bg-[rgba(173,255,47,0.05)] rounded px-1.5 py-0.5 w-fit max-w-full truncate">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reasoning */}
+          <div className="flex items-start gap-3">
+            <div className={iconBox} style={iconStyle}>
+              <Bot className={iconCls} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-mono text-[#8B96A0] mb-1">Reasoning</p>
+              <p className="text-xs text-[#8B96A0] leading-relaxed break-words">{run.reasoning}</p>
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div className="flex items-start gap-3">
+            <div className={iconBox} style={iconStyle}>
+              <MessageSquare className={iconCls} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-mono text-[#8B96A0] mb-1">GitHub comment posted</p>
+              <div className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-xs text-[#E8EDF0] leading-relaxed break-words">
+                {run.comment}
+              </div>
+            </div>
+          </div>
+
+          {/* Save */}
+          <div className="flex items-start gap-3">
+            <div className={iconBox} style={iconStyle}>
+              <Save className={iconCls} />
+            </div>
+            <p className="text-xs text-[#4B5563] mt-1.5 min-w-0 flex-1">Reasoning saved to DevMind → pending approval</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AgentTimelinePage() {
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 600)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <div className="space-y-5 w-full">
       <div>
-        <h1 className="text-xl font-semibold text-[#E8EDF0]">Agent Timeline</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#E8EDF0]">Agent Timeline</h1>
         <p className="text-sm text-[#8B96A0] mt-0.5">Autonomous agent execution history</p>
       </div>
 
-      <div className="space-y-4">
-        {RUNS.map((run) => (
-          <details key={run.id} className="group rounded-[14px] overflow-hidden backdrop-blur-xl" style={{ background: "rgba(17,25,35,0.88)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 24px rgba(0,0,0,0.4)" }}>
-            <summary className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-4 cursor-pointer list-none hover:bg-[rgba(255,255,255,0.02)] transition-colors duration-200">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(96,165,250,0.1)] text-[#60A5FA] shrink-0">
-                <Bot className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-[#E8EDF0]">PR Reviewer</span>
-                  <Chip variant="blue" dot><span className="truncate max-w-[160px] sm:max-w-none">{run.pr}</span></Chip>
-                </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-[#8B96A0]">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {run.time}
-                  </span>
-                  {run.memoriesQueried.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Brain className="h-3 w-3" />
-                      {run.memoriesQueried.length} memories recalled
-                    </span>
-                  )}
-                </div>
-              </div>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-mono ${statusColor[run.status]}`}>
-                {run.status}
-              </span>
-            </summary>
-
-            <div className="border-t border-[rgba(255,255,255,0.06)] px-4 sm:px-5 py-4 space-y-4">
-              {/* PR */}
-              <div className="flex items-start gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[rgba(96,165,250,0.1)] text-[#60A5FA] shrink-0">
-                  <GitPullRequest className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-mono text-[#8B96A0]">Pull request</p>
-                  <p className="text-sm text-[#E8EDF0]">{run.pr}</p>
-                </div>
-              </div>
-
-              {/* Memories */}
-              {run.memoriesQueried.length > 0 && (
-                <div className="flex items-start gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[rgba(173,255,47,0.1)] text-[#ADFF2F] shrink-0">
-                    <Brain className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-mono text-[#8B96A0]">Memories recalled</p>
-                    {run.memoriesQueried.map((m) => (
-                      <span key={m} className="block text-xs font-mono text-[#ADFF2F] bg-[rgba(173,255,47,0.05)] rounded px-1.5 py-0.5 w-fit">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Reasoning */}
-              <div className="flex items-start gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[rgba(251,191,36,0.1)] text-[#FBBF24] shrink-0">
-                  <Bot className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-mono text-[#8B96A0] mb-1">Reasoning</p>
-                  <p className="text-xs text-[#8B96A0] leading-relaxed">{run.reasoning}</p>
-                </div>
-              </div>
-
-              {/* Comment */}
-              <div className="flex items-start gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[rgba(244,114,182,0.1)] text-[#F472B6] shrink-0">
-                  <MessageSquare className="h-3.5 w-3.5" />
-                </div>
-                <div>
-                  <p className="text-xs font-mono text-[#8B96A0] mb-1">GitHub comment posted</p>
-                  <div className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-xs text-[#E8EDF0] leading-relaxed">
-                    {run.comment}
-                  </div>
-                </div>
-              </div>
-
-              {/* Save artifact */}
-              <div className="flex items-start gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[rgba(255,255,255,0.06)] text-[#4B5563] shrink-0">
-                  <Save className="h-3.5 w-3.5" />
-                </div>
-                <p className="text-xs text-[#4B5563] mt-1.5">Reasoning saved to DevMind → pending approval</p>
-              </div>
-            </div>
-          </details>
-        ))}
-      </div>
+      {loading ? (
+        <div className="space-y-2 rounded-[14px] overflow-hidden border border-[rgba(255,255,255,0.06)]" style={{ background: "rgba(17,25,35,0.88)" }}>
+          {Array.from({ length: 4 }).map((_, i) => <TimelineEventSkeleton key={i} />)}
+        </div>
+      ) : RUNS.length === 0 ? (
+        <EmptyState
+          image="/empty-timeline.png"
+          title="No agent runs yet"
+          description="Agent runs will appear here once your PR Reviewer processes a pull request."
+        />
+      ) : (
+        <div className="space-y-4">
+          {RUNS.map((run) => (
+            <RunCard key={run.id} run={run} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

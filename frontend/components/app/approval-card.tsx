@@ -77,11 +77,11 @@ export function ApprovalCard({
     <div
       className={cn(
         "rounded-[14px] border border-[rgba(255,255,255,0.09)] overflow-hidden backdrop-blur-xl",
-        "transition-all duration-200",
-        hasSecrets && "border-[rgba(244,114,182,0.2)]",
+        "transition-all duration-200 hover:border-[rgba(255,255,255,0.14)]",
+        hasSecrets && "border-[rgba(244,114,182,0.22)] hover:border-[rgba(244,114,182,0.3)]",
         className
       )}
-      style={{ background: "rgba(17,25,35,0.88)", boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset, 0 4px 20px rgba(0,0,0,0.4)" }}
+      style={{ background: "rgba(17,25,35,0.88)", boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 32px rgba(0,0,0,0.45)" }}
     >
       {hasSecrets && (
         <div className="flex items-center gap-2 px-5 py-2.5 bg-[rgba(244,114,182,0.06)] border-b border-[rgba(244,114,182,0.15)]">
@@ -120,7 +120,8 @@ export function ApprovalCard({
             {memory.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-[10px] font-mono text-[#4B5563] bg-[rgba(255,255,255,0.04)] rounded px-1.5 py-0.5"
+                className="text-[10px] font-mono text-[#ADFF2F] rounded px-1.5 py-0.5"
+                style={{ background: "rgba(173,255,47,0.08)", border: "1px solid rgba(173,255,47,0.18)" }}
               >
                 #{tag}
               </span>

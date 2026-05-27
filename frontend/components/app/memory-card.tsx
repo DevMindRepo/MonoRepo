@@ -32,20 +32,19 @@ const privacyIcon = {
 
 export function MemoryCard({ memory, onClick, selected, className }: MemoryCardProps) {
   const PrivacyIcon = privacyIcon[memory.privacy]
-  const preview = memory.content.slice(0, 140) + (memory.content.length > 140 ? "…" : "")
 
   return (
     <button
       onClick={onClick}
       className={cn(
         "group w-full text-left rounded-[14px] border backdrop-blur-xl p-4 transition-all duration-200",
-        "hover:border-[rgba(173,255,47,0.2)]",
+        "hover:border-[rgba(173,255,47,0.2)] hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
         selected
-          ? "border-[rgba(173,255,47,0.35)] shadow-[0_0_0_1px_rgba(173,255,47,0.15)]"
+          ? "border-[rgba(173,255,47,0.4)] shadow-[0_0_0_1px_rgba(173,255,47,0.2),_0_8px_32px_rgba(0,0,0,0.5)]"
           : "border-[rgba(255,255,255,0.09)]",
         className
       )}
-      style={{ background: "rgba(17,25,35,0.88)" }}
+      style={{ background: "rgba(17,25,35,0.88)", boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset, 0 4px 16px rgba(0,0,0,0.4)" }}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -65,15 +64,16 @@ export function MemoryCard({ memory, onClick, selected, className }: MemoryCardP
         )}
       </div>
 
-      <p className="text-sm text-[#E8EDF0] leading-relaxed mb-3 line-clamp-2">
-        {preview}
+      <p className="text-sm text-[#E8EDF0] leading-relaxed mb-3 line-clamp-3">
+        {memory.content}
       </p>
 
       <div className="flex items-center gap-2 flex-wrap">
         {memory.tags.slice(0, 3).map((tag) => (
           <span
             key={tag}
-            className="text-[10px] font-mono text-[#4B5563] bg-[rgba(255,255,255,0.04)] rounded px-1.5 py-0.5"
+            className="text-[10px] font-mono text-[#ADFF2F] rounded px-1.5 py-0.5"
+            style={{ background: "rgba(173,255,47,0.08)", border: "1px solid rgba(173,255,47,0.18)" }}
           >
             #{tag}
           </span>

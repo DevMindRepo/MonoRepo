@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { Wallet, ChevronDown, LogOut } from "lucide-react"
 import { cn, truncateAddress } from "@/lib/utils"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 interface WalletPillProps {
   address?: string
@@ -19,7 +21,14 @@ export function WalletPill({
   onDisconnect,
   className,
 }: WalletPillProps) {
+  const router = useRouter()
   const [open, setOpen] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+
+  const handleDisconnectConfirmed = () => {
+    onDisconnect?.()
+    router.push("/")
+  }
 
   if (!connected || !address) {
     return (
@@ -56,7 +65,7 @@ export function WalletPill({
             {truncateAddress(address, 6)}
           </div>
           <button
-            onClick={() => { setOpen(false); onDisconnect?.() }}
+            onClick={() => { setOpen(false); setConfirmOpen(true) }}
             className="flex w-full items-center gap-2 rounded-[6px] px-3 py-2 text-xs text-[#F87171] hover:bg-[rgba(248,113,113,0.1)] transition-colors duration-150 cursor-pointer"
           >
             <LogOut className="h-3 w-3" />
@@ -64,6 +73,16 @@ export function WalletPill({
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Disconnect wallet?"
+        description="You'll be signed out and returned to the home page."
+        confirmLabel="Disconnect"
+        variant="destructive"
+        onConfirm={handleDisconnectConfirmed}
+      />
     </div>
   )
 }

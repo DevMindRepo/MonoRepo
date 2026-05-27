@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -50,10 +51,19 @@ const MOBILE_NAV_ITEMS = [
 ]
 
 const sidebarGlass = {
-  background: "rgba(8,13,17,0.85)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
+  background: "rgba(7,11,15,0.82)",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
   borderRight: "1px solid rgba(255,255,255,0.07)",
+  boxShadow: "1px 0 0 rgba(255,255,255,0.03) inset",
+} as React.CSSProperties
+
+const activeNavStyle = {
+  background: "rgba(173,255,47,0.10)",
+  border: "1px solid rgba(173,255,47,0.22)",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 4px 16px rgba(0,0,0,0.35), 0 0 0 1px rgba(173,255,47,0.08)",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
 } as React.CSSProperties
 
 export function Sidebar() {
@@ -73,15 +83,13 @@ export function Sidebar() {
         {/* Logo */}
         <div
           className={cn(
-            "flex items-center gap-2.5 px-4 py-[18px] border-b border-[rgba(255,255,255,0.06)]",
-            collapsed && "justify-center px-0"
+            "flex items-center px-4 py-[18px] border-b border-[rgba(255,255,255,0.05)]",
+            collapsed ? "justify-center px-0" : "gap-2.5"
           )}
         >
-          <div className="shrink-0 h-7 w-7 rounded-[8px] bg-[#ADFF2F] flex items-center justify-center">
-            <span className="text-[#070B0E] font-bold font-mono text-xs">D</span>
-          </div>
+          <Image src="/icon-512.png" alt="DevMind" width={28} height={28} className="h-7 w-7 rounded-[8px] shrink-0" quality={100} />
           {!collapsed && (
-            <span className="font-semibold text-[#E8EDF0] tracking-tight text-sm">DevMind</span>
+            <span className="font-bold text-sm text-[#E8EDF0] tracking-[-0.02em]">DevMind</span>
           )}
         </div>
 
@@ -109,14 +117,7 @@ export function Sidebar() {
                           ? "text-[#ADFF2F]"
                           : "text-[#8B96A0] hover:text-[#E8EDF0]"
                       )}
-                      style={
-                        active
-                          ? {
-                              background: "rgba(173,255,47,0.08)",
-                              boxShadow: "0 0 0 1px rgba(173,255,47,0.12) inset",
-                            }
-                          : undefined
-                      }
+                      style={active ? activeNavStyle : undefined}
                       onMouseEnter={(e) => {
                         if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"
                       }}
@@ -124,12 +125,6 @@ export function Sidebar() {
                         if (!active) (e.currentTarget as HTMLElement).style.background = "transparent"
                       }}
                     >
-                      {active && (
-                        <span
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-[#ADFF2F]"
-                          style={{ boxShadow: "0 0 8px #ADFF2F" }}
-                        />
-                      )}
                       <Icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span className="flex-1 text-sm">{label}</span>}
                       {!collapsed && badge && (
@@ -181,12 +176,12 @@ export function Sidebar() {
               <div className="relative">
                 <Icon className="h-5 w-5" />
                 {badge && (
-                  <span className="absolute -top-1 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#F472B6] text-[8px] font-bold text-white leading-none">
+                  <span className="absolute -top-1 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#F472B6] text-[10px] font-bold text-white leading-none">
                     3
                   </span>
                 )}
               </div>
-              <span className="text-[9px] font-medium tracking-tight leading-none">{label}</span>
+              <span className="text-[10px] font-medium tracking-tight leading-none">{label}</span>
               {active && (
                 <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-[#ADFF2F]"
                   style={{ boxShadow: "0 0 6px #ADFF2F" }} />

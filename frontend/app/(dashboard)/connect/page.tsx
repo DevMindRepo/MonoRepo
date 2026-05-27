@@ -117,7 +117,7 @@ export default function ConnectPage() {
                         : { border: "1px solid rgba(255,255,255,0.08)", color: "#4B5563" }
                     }
                   >
-                    {done && i !== 2 ? <CheckCircle className="h-3 w-3" /> : i + 1}
+                    {done ? <CheckCircle className="h-3 w-3" /> : i + 1}
                   </div>
                   <span className="text-sm" style={{ color: done || active_step ? "#E8EDF0" : "#4B5563" }}>
                     {label}
@@ -129,7 +129,7 @@ export default function ConnectPage() {
               )
             })}
 
-            <div className="border-t border-[rgba(255,255,255,0.06)] pt-3 mt-2 space-y-1">
+            <div className="hidden lg:block border-t border-[rgba(255,255,255,0.06)] pt-3 mt-2 space-y-1">
               <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563] px-3">MCP Tools</p>
               {["save_memory", "get_memory", "share_context", "save_artifact"].map((tool) => (
                 <div key={tool} className="flex items-center gap-2 px-3 py-1">
@@ -179,7 +179,7 @@ export default function ConnectPage() {
             </div>
             <div className="p-5 space-y-4">
               {/* Tool selector */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {TOOLS.map((t) => {
                   const Icon = t.icon
                   const isActive = active === t.id
@@ -187,14 +187,14 @@ export default function ConnectPage() {
                     <button
                       key={t.id}
                       onClick={() => setActive(t.id)}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-medium transition-all duration-200 cursor-pointer"
+                      className="flex flex-1 min-w-[80px] items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-medium transition-all duration-200 cursor-pointer"
                       style={isActive
                         ? { background: "rgba(173,255,47,0.1)", border: "1px solid rgba(173,255,47,0.25)", color: "#ADFF2F" }
                         : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#8B96A0" }
                       }
                     >
                       <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span className="hidden sm:block">{t.label}</span>
+                      <span>{t.label}</span>
                     </button>
                   )
                 })}
@@ -250,13 +250,12 @@ export default function ConnectPage() {
             <div className="flex items-start gap-4 p-5">
               {verified ? (
                 <>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{ background: "rgba(173,255,47,0.1)", border: "1px solid rgba(173,255,47,0.2)" }}>
-                    <CheckCircle className="h-5 w-5 text-[#ADFF2F]" />
-                  </div>
+                  <CheckCircle className="h-5 w-5 shrink-0 text-[#ADFF2F]" />
                   <div>
                     <p className="font-medium text-[#ADFF2F]">Connected successfully</p>
-                    <p className="mt-0.5 text-sm text-[#8B96A0]">Claude Code · workspace devmind-core · 4 tools registered</p>
+                    <div className="mt-1.5" style={{ background: "rgba(173,255,47,0.06)", border: "1px solid rgba(173,255,47,0.2)", borderRadius: 10, padding: "12px 16px" }}>
+                      <p className="text-sm text-[#ADFF2F]">Claude Code · workspace devmind-core · 4 tools registered</p>
+                    </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {["save_memory", "get_memory", "share_context", "save_artifact"].map((t) => (
                         <span key={t} className="text-[10px] font-mono text-[#ADFF2F] rounded-md px-2 py-0.5"
@@ -269,10 +268,7 @@ export default function ConnectPage() {
                 </>
               ) : (
                 <>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <Wifi className="h-5 w-5 text-[#8B96A0] animate-pulse" />
-                  </div>
+                  <Wifi className="h-5 w-5 shrink-0 text-[#8B96A0] animate-pulse" />
                   <div>
                     <p className="font-medium text-[#8B96A0]">Waiting for first connection…</p>
                     <p className="mt-0.5 text-sm text-[#4B5563]">Start your AI tool after adding the config. We'll detect when it first connects.</p>

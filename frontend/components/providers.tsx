@@ -35,11 +35,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <Toaster
             theme="dark"
             position="bottom-right"
+            richColors
             toastOptions={{
               style: {
-                background: "#11181C",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(17,25,35,0.97)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                border: "1px solid rgba(255,255,255,0.09)",
                 color: "#E8EDF0",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 32px rgba(0,0,0,0.5)",
+                fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                fontSize: "13px",
+              },
+              classNames: {
+                success: "!text-[#E8EDF0]",
+                error: "!text-[#E8EDF0]",
               },
             }}
           />

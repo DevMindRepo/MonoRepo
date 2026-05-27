@@ -2,9 +2,12 @@
 
 import * as React from "react"
 import { CheckCircle, AlertTriangle } from "lucide-react"
+import { toast } from "sonner"
 import { ApprovalCard, type PendingMemory } from "@/components/app/approval-card"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Skeleton, ApprovalCardSkeleton } from "@/components/ui/skeleton"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { EditMemoryDialog, type EditableMemory } from "@/components/app/edit-memory-dialog"
 
 const MOCK_PENDING: PendingMemory[] = [
   {
@@ -61,13 +64,25 @@ export default function ApprovalQueuePage() {
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [approvedId, setApprovedId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [rejectId, setRejectId] = React.useState<string | null>(null)
+  const [approveId, setApproveId] = React.useState<string | null>(null)
+  const [editMemory, setEditMemory] = React.useState<EditableMemory | null>(null)
 
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 800)
     return () => clearTimeout(t)
   }, [])
 
-  const handleApprove = async (id: string) => {
+  const requestApprove = (id: string) => {
+    const m = items.find((x) => x.id === id)
+    if (m?.secrets && m.secrets.length > 0) {
+      setApproveId(id)
+    } else {
+      void doApprove(id)
+    }
+  }
+
+  const doApprove = async (id: string) => {
     setLoadingId(id)
     await new Promise((r) => setTimeout(r, 1200))
     setApprovedId(id)
@@ -75,14 +90,36 @@ export default function ApprovalQueuePage() {
     setItems((prev) => prev.filter((m) => m.id !== id))
     setLoadingId(null)
     setApprovedId(null)
+    toast.success("Memory approved", { description: "Encrypted and uploaded to Walrus" })
   }
 
-  const handleReject = (id: string) => {
+  const requestReject = (id: string) => {
+    setRejectId(id)
+  }
+
+  const doReject = (id: string) => {
     setItems((prev) => prev.filter((m) => m.id !== id))
+    toast.success("Memory rejected", { description: "Discarded from pending queue" })
   }
 
-  const handleEdit = (id: string) => {
-    console.log("edit", id)
+  const requestEdit = (id: string) => {
+    const m = items.find((x) => x.id === id)
+    if (!m) return
+    setEditMemory({
+      id: m.id,
+      content: m.content,
+      type: m.type,
+      tags: m.tags,
+    })
+  }
+
+  const handleSaveEdit = (updated: EditableMemory) => {
+    setItems((prev) => prev.map((m) =>
+      m.id === updated.id
+        ? { ...m, content: updated.content, type: updated.type, tags: updated.tags }
+        : m
+    ))
+    toast.success("Memory updated", { description: "Changes saved. Approve to encrypt and upload." })
   }
 
   const hasSecrets = items.some((m) => (m.secrets?.length ?? 0) > 0)
@@ -91,7 +128,7 @@ export default function ApprovalQueuePage() {
     <div className="space-y-5 w-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-[#E8EDF0]">Approval Queue</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#E8EDF0]">Approval Queue</h1>
           <p className="text-sm text-[#8B96A0] mt-0.5">
             Review memories before they&apos;re encrypted and stored on Walrus
           </p>
@@ -137,15 +174,42 @@ export default function ApprovalQueuePage() {
               )}
               <ApprovalCard
                 memory={memory}
-                onApprove={handleApprove}
-                onEdit={handleEdit}
-                onReject={handleReject}
+                onApprove={requestApprove}
+                onEdit={requestEdit}
+                onReject={requestReject}
                 loading={loadingId === memory.id}
               />
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={rejectId !== null}
+        onOpenChange={(open) => !open && setRejectId(null)}
+        title="Reject this memory?"
+        description="The memory will be discarded from the pending queue. This action cannot be undone."
+        confirmLabel="Reject"
+        variant="destructive"
+        onConfirm={() => { if (rejectId) doReject(rejectId); setRejectId(null) }}
+      />
+
+      <ConfirmDialog
+        open={approveId !== null}
+        onOpenChange={(open) => !open && setApproveId(null)}
+        title="Approve memory with potential secrets?"
+        description="This memory contains highlighted text that may be a secret (API key, token, etc.). It will be encrypted before storage, but consider editing first to remove sensitive values."
+        confirmLabel="Approve anyway"
+        variant="destructive"
+        onConfirm={async () => { if (approveId) await doApprove(approveId); setApproveId(null) }}
+      />
+
+      <EditMemoryDialog
+        open={editMemory !== null}
+        onOpenChange={(open) => !open && setEditMemory(null)}
+        memory={editMemory}
+        onSave={handleSaveEdit}
+      />
     </div>
   )
 }

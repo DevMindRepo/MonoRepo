@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
   { href: "#how-it-works", label: "How it works" },
-  { href: "#features", label: "Features" },
+  { href: "#agent-demo", label: "Features" },
   { href: "#architecture", label: "Architecture" },
   { href: "#faq", label: "FAQ" },
 ]
@@ -39,11 +40,9 @@ export function Navbar() {
         )}
       >
         <div className="mx-auto max-w-7xl px-5 md:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMobileOpen(false)}>
-            <div className="h-7 w-7 rounded-[8px] bg-gradient-to-br from-[#ADFF2F] to-[#ADFF2F] flex items-center justify-center">
-              <span className="text-[#070B0E] font-bold font-mono text-xs">D</span>
-            </div>
-            <span className="font-semibold text-[#E8EDF0] tracking-tight">DevMind</span>
+          <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-1.5">
+            <Image src="/icon-512.png" alt="DevMind" width={28} height={28} className="h-7 w-7 rounded-[8px]" quality={100} />
+            <span className="font-bold text-sm text-[#E8EDF0] tracking-[-0.02em]">DevMind</span>
           </Link>
 
           {/* Desktop nav */}
@@ -61,7 +60,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-2 md:gap-3">
             <Link
-              href="https://github.com"
+              href="https://github.com/DevMindRepo/MonoRepo"
               className="hidden md:flex text-sm text-[#8B96A0] hover:text-[#E8EDF0] transition-colors duration-200"
               target="_blank"
             >
@@ -104,7 +103,7 @@ export function Navbar() {
             ))}
             <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] mt-2">
               <Link
-                href="https://github.com"
+                href="https://github.com/DevMindRepo/MonoRepo"
                 target="_blank"
                 className="flex items-center px-3 py-2.5 text-sm text-[#8B96A0] hover:text-[#E8EDF0] rounded-[8px] hover:bg-[rgba(255,255,255,0.05)] transition-all duration-200"
               >
