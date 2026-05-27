@@ -3,7 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import { X, Loader2 } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 interface ConfirmDialogProps {
   open: boolean
@@ -95,7 +95,7 @@ export function ConfirmDialog({
           </div>
 
           {/* Title */}
-          <h2
+          <DialogTitle
             className="text-center tracking-tight"
             style={{
               fontSize: "17px",
@@ -105,7 +105,7 @@ export function ConfirmDialog({
             }}
           >
             {title}
-          </h2>
+          </DialogTitle>
 
           {/* Description */}
           {description && (
