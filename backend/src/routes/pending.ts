@@ -1,10 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
 import { getPending, listPendingForWorkspace, deletePending } from '../services/pending-queue.js';
-import { generateEmbedding } from '../services/embedding.js';
-import { encryptForStorage } from '../services/seal.js';
-import { uploadToWalrus } from '../services/walrus.js';
+import { rememberMemory } from '../services/memwal.js';
 import { ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors.js';
 
 const approveSchema = z.object({
@@ -64,7 +61,7 @@ export default async function pendingRoutes(app: FastifyInstance) {
     };
   });
 
-  // Approve pending → encrypt → upload Walrus → save Memory + Embedding
+  // Approve pending → MemWal.remember (handles Walrus + Seal + embedding) → save metadata
   app.post('/pending/:id/approve', async (req) => {
     const { id } = req.params as { id: string };
     const body = approveSchema.parse(req.body ?? {});
@@ -73,11 +70,22 @@ export default async function pendingRoutes(app: FastifyInstance) {
     if (!item) throw new NotFoundError('Pending memory');
     await assertMember(app, item.workspaceId, req.user.userId);
 
+    const workspace = await app.prisma.workspace.findUnique({
+      where: { id: item.workspaceId },
+      select: { memwalNamespace: true },
+    });
+    if (!workspace?.memwalNamespace) {
+      throw new BadRequestError('Workspace has no MemWal namespace configured');
+    }
+
     const finalContent = body.editedContent ?? item.content;
     const finalTags = body.editedTags ?? item.tags;
 
-    const encrypted = await encryptForStorage(finalContent, id);
-    const blobId = await uploadToWalrus(encrypted);
+    // MemWal handles: encrypt (Seal) → upload Walrus → embed → index
+    const { memwalMemoryId } = await rememberMemory({
+      namespace: workspace.memwalNamespace,
+      content: finalContent,
+    });
 
     const memory = await app.prisma.memory.create({
       data: {
@@ -88,28 +96,17 @@ export default async function pendingRoutes(app: FastifyInstance) {
         privacy: item.privacy,
         status: 'approved',
         tags: finalTags,
-        walrusBlobId: blobId,
+        memwalMemoryId,
         source: item.source ?? null,
         sessionId: item.sessionId ?? null,
       },
     });
 
-    const embedding = await generateEmbedding(finalContent);
-    const vectorLit = `[${embedding.join(',')}]`;
-
-    await app.prisma.$executeRawUnsafe(
-      `INSERT INTO "MemoryEmbedding" ("id", "memoryId", "vector")
-       VALUES ($1, $2, $3::vector)`,
-      randomUUID(),
-      memory.id,
-      vectorLit,
-    );
-
     await deletePending(app.redis, id, item.workspaceId);
 
     return {
       success: true,
-      data: { id: memory.id, walrusBlobId: blobId, status: 'approved' },
+      data: { id: memory.id, memwalMemoryId, status: 'approved' },
     };
   });
 

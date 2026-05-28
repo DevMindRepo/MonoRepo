@@ -59,7 +59,7 @@ export interface Memory {
   privacy: MemoryPrivacy
   status: string
   tags: string[]
-  blobId: string | null
+  memwalMemoryId: string | null
   source: string | null
   sessionId: string | null
   author: AuthorRef
@@ -73,7 +73,7 @@ export interface MemorySearchResult {
   type: MemoryType
   privacy: MemoryPrivacy
   tags: string[]
-  blobId: string | null
+  memwalMemoryId: string | null
   source: string | null
   score: number
   author: AuthorRef

@@ -24,12 +24,13 @@ model User {
 }
 
 model Workspace {
-  id          String   @id @default(cuid())
-  name        String
-  ownerId     String
-  suiObjectId String?
-  walrusRoot  String?
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  ownerId          String
+  suiObjectId      String?
+  walrusRoot       String?
+  memwalNamespace  String?  // MemWal namespace used for this workspace's memory layer
+  createdAt        DateTime @default(now())
 
   members         WorkspaceMember[]
   memories        Memory[]
@@ -53,31 +54,22 @@ model WorkspaceMember {
 }
 
 model Memory {
-  id           String   @id @default(cuid())
-  workspaceId  String
-  authorId     String
-  content      String
-  type         String
-  privacy      String   @default("team")
-  status       String   @default("pending_approval")
-  tags         String[]
-  walrusBlobId String?
-  source       String?
-  sessionId    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  workspaceId     String
+  authorId        String
+  content         String   // Plaintext cached for display. Source of truth = MemWal (encrypted on Walrus).
+  type            String
+  privacy         String   @default("team")
+  status          String   @default("pending_approval")
+  tags            String[]
+  memwalMemoryId  String?  // ID returned by MemWal.remember() — points to the encrypted memory in Walrus
+  source          String?
+  sessionId       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  author    User             @relation(fields: [authorId], references: [id])
-  embedding MemoryEmbedding?
-}
-
-model MemoryEmbedding {
-  id       String                      @id @default(cuid())
-  memoryId String                      @unique
-  vector   Unsupported("vector(768)")?
-
-  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
 }
 
 model PendingMemory {
@@ -105,7 +97,7 @@ model Artifact {
   authorId        String
   filename        String
   type            String
-  walrusBlobId    String
+  memwalMemoryId  String   // MemWal memory ID pointing to the file blob (encrypted on Walrus)
   sizeBytes       Int      @default(0)
   source          String?
   relatedMemoryId String?

@@ -1,25 +1,53 @@
 {
-  "name": "@devmind/mcp-server",
-  "version": "0.0.1",
-  "private": true,
+  "name": "devmind-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for DevMind — persistent memory for AI coding assistants (Claude Code, Cursor) backed by Walrus + MemWal + Seal on Sui.",
+  "keywords": [
+    "mcp",
+    "devmind",
+    "walrus",
+    "memwal",
+    "sui",
+    "ai",
+    "memory",
+    "claude-code",
+    "cursor",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "author": "DevMind",
+  "homepage": "https://github.com/DevMindRepo/MonoRepo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevMindRepo/mcp-server.git"
+  },
+  "bugs": "https://github.com/DevMindRepo/MonoRepo/issues",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "devmind-mcp": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@devmind/memwal-client": "workspace:*",
-    "@devmind/seal-client": "workspace:*",
-    "@devmind/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.7.0",
-    "ioredis": "^5.4.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -2,61 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ArrowUpRight, Bot, UserPlus, Save, Activity, Zap, CheckCircle } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { ArrowUpRight, Bot, UserPlus, Save, Activity, Zap, CheckCircle, type LucideIcon } from "lucide-react"
 import { MemoryNode, WalrusBlob, AgentBot, SealLock } from "@/components/icons/brand-icons"
 import { Chip } from "@/components/ui/chip"
 import { timeAgo } from "@/lib/utils"
 import { DashboardMetricSkeleton } from "@/components/ui/skeleton"
-
-const METRICS = [
-  {
-    icon: MemoryNode,
-    label: "Total Memories",
-    value: "247",
-    change: "+12 this week",
-    color: "#ADFF2F",
-    alert: false,
-  },
-  {
-    icon: SealLock,
-    label: "Pending Approval",
-    value: "3",
-    change: "review now",
-    color: "#F472B6",
-    alert: true,
-    href: "/approval-queue",
-  },
-  {
-    icon: AgentBot,
-    label: "Agent Runs",
-    value: "18",
-    change: "this week",
-    color: "#60A5FA",
-    alert: false,
-  },
-  {
-    icon: WalrusBlob,
-    label: "Walrus Storage",
-    value: "4.2 MB",
-    change: "247 blobs stored",
-    color: "#FBBF24",
-    alert: false,
-  },
-]
-
-const ACTIVITY = [
-  { icon: Save,        text: "Memory saved via Claude Code",   sub: "decision: use pgvector for semantic search",                 time: new Date(Date.now() - 12 * 60000) },
-  { icon: Bot,         text: "PR Reviewer reviewed #249",       sub: "Referenced 2 memories — auth-policy, api-versioning",        time: new Date(Date.now() - 45 * 60000) },
-  { icon: CheckCircle, text: "3 memories approved",             sub: "arch/db-schema, bug/hydration-mismatch, note/deploy-steps",  time: new Date(Date.now() - 2 * 3600000) },
-  { icon: UserPlus,    text: "alisa@example.com joined workspace", sub: "Invited via Sui address 0x4f2a…",                          time: new Date(Date.now() - 5 * 3600000) },
-  { icon: Save,        text: "Memory saved via Cursor",         sub: "bug: React 19 hydration with Zustand SSR",                   time: new Date(Date.now() - 8 * 3600000) },
-]
-
-const QUICK_ACTIONS = [
-  { label: "Review pending memories", tag: "3 waiting", href: "/approval-queue", color: "#F472B6" },
-  { label: "Browse all memories",     tag: "247 total", href: "/memories",        color: "#60A5FA" },
-  { label: "Connect new AI tool",     tag: "MCP setup", href: "/connect",         color: "#ADFF2F" },
-]
+import { statsApi } from "@/lib/api-endpoints"
+import { useAuthStore } from "@/lib/store/auth"
+import type { ActivityEvent } from "@/lib/api-types"
 
 const glass = {
   background: "rgba(17,25,35,0.88)",
@@ -66,13 +20,107 @@ const glass = {
   boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 32px rgba(0,0,0,0.5)",
 } as React.CSSProperties
 
-export default function DashboardPage() {
-  const [loading, setLoading] = React.useState(true)
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B"
+  const units = ["B", "KB", "MB", "GB"]
+  let v = bytes
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024
+    i++
+  }
+  return `${v.toFixed(v >= 10 ? 0 : 1)} ${units[i]}`
+}
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700)
-    return () => clearTimeout(t)
-  }, [])
+const activityIconFor = (type: ActivityEvent["type"]): LucideIcon => {
+  switch (type) {
+    case "memory_saved":
+      return Save
+    case "agent_run":
+      return Bot
+    case "member_joined":
+      return UserPlus
+    default:
+      return CheckCircle
+  }
+}
+
+export default function DashboardPage() {
+  const workspaceId = useAuthStore((s) => s.workspace?.id)
+
+  const statsQuery = useQuery({
+    queryKey: ["stats", workspaceId],
+    queryFn: () => statsApi.workspace(workspaceId!),
+    enabled: !!workspaceId,
+  })
+
+  const activityQuery = useQuery({
+    queryKey: ["activity", workspaceId],
+    queryFn: () => statsApi.activity(workspaceId!, 20),
+    enabled: !!workspaceId,
+  })
+
+  const stats = statsQuery.data
+  const activity = activityQuery.data ?? []
+  const loading = statsQuery.isLoading || !stats
+
+  const metrics = React.useMemo(() => {
+    if (!stats) return []
+    return [
+      {
+        icon: MemoryNode,
+        label: "Total Memories",
+        value: String(stats.totalMemories),
+        change: `+${stats.memoriesThisWeek} this week`,
+        color: "#ADFF2F",
+        alert: false,
+      },
+      {
+        icon: SealLock,
+        label: "Pending Approval",
+        value: String(stats.pendingCount),
+        change: stats.pendingCount > 0 ? "review now" : "all clear",
+        color: "#F472B6",
+        alert: stats.pendingCount > 0,
+        href: "/approval-queue",
+      },
+      {
+        icon: AgentBot,
+        label: "Agent Runs",
+        value: String(stats.agentRunsTotal),
+        change: `+${stats.agentRunsThisWeek} this week`,
+        color: "#60A5FA",
+        alert: false,
+      },
+      {
+        icon: WalrusBlob,
+        label: "Walrus Storage",
+        value: formatBytes(stats.walrusStorageBytes),
+        change: `${stats.artifactsCount} artifacts stored`,
+        color: "#FBBF24",
+        alert: false,
+      },
+    ]
+  }, [stats])
+
+  const quickActions = [
+    {
+      label: "Review pending memories",
+      tag: stats ? `${stats.pendingCount} waiting` : "—",
+      href: "/approval-queue",
+      color: "#F472B6",
+    },
+    {
+      label: "Browse all memories",
+      tag: stats ? `${stats.totalMemories} total` : "—",
+      href: "/memories",
+      color: "#60A5FA",
+    },
+    { label: "Connect new AI tool", tag: "MCP setup", href: "/connect", color: "#ADFF2F" },
+  ]
+
+  const approvedCount = stats ? Math.max(stats.totalMemories - stats.pendingCount, 0) : 0
+  const totalForHealth = stats ? Math.max(stats.totalMemories, 1) : 1
 
   return (
     <div className="space-y-5 w-full">
@@ -95,7 +143,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <DashboardMetricSkeleton key={i} />)
-        ) : METRICS.map(({ icon: Icon, label, value, change, color, alert, href }) => (
+        ) : metrics.map(({ icon: Icon, label, value, change, color, alert, href }) => (
           <Link
             key={label}
             href={href ?? "#"}
@@ -147,24 +195,30 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-            {ACTIVITY.map(({ icon: Icon, text, sub, time }, i) => (
-              <div
-                key={i}
-                className="flex gap-3.5 px-5 py-3.5"
-              >
-                <div
-                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
-                  style={{ background: "rgba(255,255,255,0.04)" }}
-                >
-                  <Icon className="h-3.5 w-3.5 text-[#8B96A0]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-[#E8EDF0]">{text}</p>
-                  <p className="mt-0.5 text-xs text-[#8B96A0] truncate">{sub}</p>
-                </div>
-                <span className="mt-0.5 shrink-0 text-[10px] font-mono text-[#4B5563]">{timeAgo(time)}</span>
-              </div>
-            ))}
+            {activityQuery.isLoading ? (
+              <div className="px-5 py-10 text-center text-xs text-[#4B5563]">Loading activity…</div>
+            ) : activity.length === 0 ? (
+              <div className="px-5 py-10 text-center text-xs text-[#4B5563]">No recent activity yet.</div>
+            ) : (
+              activity.map((event) => {
+                const Icon = activityIconFor(event.type)
+                return (
+                  <div key={event.id} className="flex gap-3.5 px-5 py-3.5">
+                    <div
+                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
+                      style={{ background: "rgba(255,255,255,0.04)" }}
+                    >
+                      <Icon className="h-3.5 w-3.5 text-[#8B96A0]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-[#E8EDF0]">{event.text}</p>
+                      <p className="mt-0.5 text-xs text-[#8B96A0] truncate">{event.sub}</p>
+                    </div>
+                    <span className="mt-0.5 shrink-0 text-[10px] font-mono text-[#4B5563]">{timeAgo(event.timestamp)}</span>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 
@@ -178,8 +232,8 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4 p-5">
               {[
-                { label: "Approved", value: 244, total: 247, color: "#ADFF2F", colorFade: "rgba(173,255,47,0.5)" },
-                { label: "Pending",  value: 3,   total: 247, color: "#F472B6", colorFade: "rgba(244,114,182,0.5)" },
+                { label: "Approved", value: approvedCount, total: totalForHealth, color: "#ADFF2F", colorFade: "rgba(173,255,47,0.5)" },
+                { label: "Pending", value: stats?.pendingCount ?? 0, total: totalForHealth, color: "#F472B6", colorFade: "rgba(244,114,182,0.5)" },
               ].map(({ label, value, total, color, colorFade }) => (
                 <div key={label} className="space-y-1.5">
                   <div className="flex justify-between text-xs">
@@ -202,10 +256,10 @@ export default function DashboardPage() {
               <div className="space-y-2 pt-1">
                 <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563]">By type</p>
                 <div className="flex flex-wrap gap-1.5">
-                  <Chip variant="mint" dot>decision · 89</Chip>
-                  <Chip variant="blue" dot>arch · 67</Chip>
-                  <Chip variant="red" dot>bug · 52</Chip>
-                  <Chip variant="default" dot>note · 39</Chip>
+                  <Chip variant="mint" dot>decision · {stats?.byType.decision ?? 0}</Chip>
+                  <Chip variant="blue" dot>arch · {stats?.byType.arch ?? 0}</Chip>
+                  <Chip variant="red" dot>bug · {stats?.byType.bug ?? 0}</Chip>
+                  <Chip variant="default" dot>note · {stats?.byType.note ?? 0}</Chip>
                 </div>
               </div>
             </div>
@@ -217,7 +271,7 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold text-[#E8EDF0]">Quick actions</h2>
             </div>
             <div className="p-3 space-y-1">
-              {QUICK_ACTIONS.map(({ label, tag, href, color }) => (
+              {quickActions.map(({ label, tag, href, color }) => (
                 <Link
                   key={href}
                   href={href}

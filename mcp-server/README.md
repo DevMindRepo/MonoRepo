@@ -1,93 +1,82 @@
-# DevMind MCP Server
+# devmind-mcp-server
 
-MCP (Model Context Protocol) server that exposes DevMind memory to AI coding assistants like Claude Code, Cursor, or any MCP-compatible client.
+> MCP server for **DevMind** — persistent memory for AI coding assistants (Claude Code, Cursor) backed by Walrus + MemWal + Seal on Sui.
 
-## Tools Provided
+Once installed, Claude Code / Cursor / any MCP-compatible client can:
+- **`save_memory`** — push a decision, bug, arch note, or general note into your team's shared memory queue (awaits human approval, then encrypted + uploaded to Walrus via MemWal).
+- **`get_memory`** — semantic search across your team's approved memories.
+- **`share_context`** — push context directly to another workspace member.
+- **`save_artifact`** — store a file (dataset, log, report) to Walrus.
 
-| Tool | Purpose |
-|---|---|
-| `save_memory` | Save a decision/bug/arch/note to DevMind pending queue (user approves later) |
-| `get_memory` | Semantic search across workspace memory (returns ranked matches) |
-| `share_context` | Push current context to another workspace (handoff) |
-| `save_artifact` | Persist binary file (report, log, dataset) to Walrus |
+Memories survive across sessions, tools, and team members. The PR Reviewer Agent reads them autonomously to flag PRs that violate past decisions.
 
-## Prerequisites
+## Install
 
-1. **Backend running** at `http://localhost:3001` (or remote URL)
-2. **Workspace exists** in DevMind — get the workspace ID from dashboard
-3. **JWT token** — login via dashboard, copy token from `localStorage.devmind_token` or from `/auth/verify` response
-
-## Build
-
-```cmd
-cd E:\devmind\mcp-server
-pnpm build
+```bash
+npm install -g devmind-mcp-server
 ```
 
-Output goes to `dist/index.js`.
+That installs the `devmind-mcp` binary globally.
 
-## Configure Claude Code
+## Setup
 
-Edit `~/.claude.json` (Windows: `C:\Users\<you>\.claude.json`) — add `devmind` to `mcpServers`:
+You need:
+1. A DevMind workspace (create one at https://devmind.app or your self-hosted dashboard)
+2. An API token (`dm_sk_*`) from the `/connect` page
+
+### Claude Code
+
+Add to `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "devmind": {
-      "command": "node",
-      "args": ["E:/devmind/mcp-server/dist/index.js"],
+      "command": "devmind-mcp",
       "env": {
-        "DEVMIND_API_BASE_URL": "http://localhost:3001",
-        "DEVMIND_API_TOKEN": "eyJhbGciOi...",
-        "DEVMIND_WORKSPACE_ID": "cuid_workspace_id_here"
+        "DEVMIND_API_BASE_URL": "https://api.devmind.app",
+        "DEVMIND_API_TOKEN": "dm_sk_xxxxx",
+        "DEVMIND_WORKSPACE_ID": "cmpxxxxxxxxxx"
       }
     }
   }
 }
 ```
 
-Then restart Claude Code. The 4 DevMind tools will be available.
+Restart Claude Code. Verify with `/mcp` — you should see `devmind` connected.
 
-## Configure Cursor
+### Cursor
 
-Add to Cursor settings (Settings → MCP → Add new MCP server):
+Add to `.cursor/mcp.json` in your project root (same shape as above).
 
-- **Name**: `devmind`
-- **Command**: `node E:/devmind/mcp-server/dist/index.js`
-- **Env vars**: same as Claude Code config above
+### Custom MCP client
 
-## Quick Test (without Claude Code)
-
-You can test the server manually with `npx @modelcontextprotocol/inspector`:
-
-```cmd
-set DEVMIND_API_BASE_URL=http://localhost:3001
-set DEVMIND_API_TOKEN=eyJ...
-set DEVMIND_WORKSPACE_ID=...
-npx @modelcontextprotocol/inspector node dist/index.js
+```typescript
+const client = new McpClient({ transport: "stdio" })
+await client.connect({
+  command: "devmind-mcp",
+  env: {
+    DEVMIND_API_BASE_URL: "https://api.devmind.app",
+    DEVMIND_API_TOKEN: "dm_sk_xxxxx",
+    DEVMIND_WORKSPACE_ID: "cmpxxxxxxxxxx",
+  },
+})
 ```
 
-This opens a UI where you can manually invoke each tool to verify it works.
+## Environment Variables
 
-## Getting Your JWT Token
+| Var | Required | Description |
+|---|---|---|
+| `DEVMIND_API_BASE_URL` | yes | DevMind backend URL (e.g. `https://api.devmind.app`) |
+| `DEVMIND_API_TOKEN` | yes | API token `dm_sk_*` — generate at `/connect` page |
+| `DEVMIND_WORKSPACE_ID` | yes | Workspace ID this MCP client should save/recall against |
 
-For now (Phase 1), get token by calling backend directly:
+## Self-hosting the backend
 
-1. Call `POST /auth/challenge` with your Sui address — get challenge message
-2. Sign message with Sui wallet (use dapp-kit or sui CLI)
-3. Call `POST /auth/verify` with signature — receive JWT
-4. Copy `data.token` from response
+The MCP server only speaks to a DevMind backend. If you self-host the backend (Fastify + Postgres + Walrus testnet), point `DEVMIND_API_BASE_URL` at your instance.
 
-Later (Phase 2), dashboard will have a "Generate API Token" button for long-lived tokens.
+See https://github.com/DevMindRepo/MonoRepo for the full stack (backend, frontend, smart contracts, PR Reviewer Agent).
 
-## Architecture
+## License
 
-```
-Claude Code (or any MCP client)
-        │ stdio (JSON-RPC over stdin/stdout)
-        ▼
-DevMind MCP Server (this package)
-        │ HTTPS + Bearer JWT
-        ▼
-DevMind Backend (Fastify) → Sui / Walrus / Seal / Postgres
-```
+MIT

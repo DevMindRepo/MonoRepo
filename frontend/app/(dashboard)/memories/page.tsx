@@ -1,24 +1,19 @@
 "use client"
 
 import * as React from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Filter, LayoutGrid, List, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Chip, memoryTypeVariant } from "@/components/ui/chip"
-import { MemoryCard, type Memory } from "@/components/app/memory-card"
+import { MemoryCard, type Memory as CardMemory } from "@/components/app/memory-card"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MemoryCardSkeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { cn, timeAgo } from "@/lib/utils"
-
-const MOCK_MEMORIES: Memory[] = [
-  { id: "m1", content: "Use pgvector with HNSW index (m=16, ef_construction=64) for all semantic search. Benchmarks show 12ms P95 on 100k vectors. Migration: add vector column to memories table, backfill via batch job.", type: "decision", privacy: "team", tags: ["database", "pgvector", "performance"], author: "you", createdAt: new Date(Date.now() - 2 * 86400000), blobId: "7xK2mN9pQ1rS3tU5vW7xY9zA" },
-  { id: "m2", content: "React 19 hydration mismatch with Zustand SSR: wrap localStorage reads in useEffect. Confirmed fixed with Zustand 5.0 + suppressHydrationWarning on container.", type: "bug", privacy: "team", tags: ["react19", "zustand", "ssr"], author: "you", createdAt: new Date(Date.now() - 3 * 86400000), blobId: "3bC5dE7fG9hI1jK2lM4nO6pQ" },
-  { id: "m3", content: "Seal Minimal: DevMind backend is the decryption proxy. seal_approve checks ctx.sender() == DEVMIND_MASTER_WALLET. Phase 2: migrate to Seal Full with per-member on-chain access control.", type: "arch", privacy: "team", tags: ["seal", "encryption", "sui"], author: "alisa", createdAt: new Date(Date.now() - 5 * 86400000), blobId: "9rS2tU4vW6xY8zA1bC3dE5fG" },
-  { id: "m4", content: "MCP config goes in ~/.claude.json for Claude Code CLI. NOT claude_desktop_config.json — that's Claude Desktop. Use server.registerTool() not server.tool() (old API).", type: "note", privacy: "team", tags: ["mcp", "claude-code", "config"], author: "you", createdAt: new Date(Date.now() - 7 * 86400000) },
-  { id: "m5", content: "No BullMQ for MVP. Redis used as simple pending queue + cache only (24h TTL on pending memories). Job workers are over-engineering for hackathon scope.", type: "decision", privacy: "team", tags: ["redis", "architecture", "mvp"], author: "you", createdAt: new Date(Date.now() - 8 * 86400000) },
-  { id: "m6", content: "PR #231: switched from custom JWT refresh to Sui wallet signature verification. JWT still issued after verification for API calls. Stateless scalability maintained.", type: "decision", privacy: "private", tags: ["auth", "jwt", "sui", "security"], author: "you", createdAt: new Date(Date.now() - 10 * 86400000), blobId: "1jK8lM2nO4pQ6rS0tU2vW4xY" },
-]
+import { memoriesApi } from "@/lib/api-endpoints"
+import { useAuthStore } from "@/lib/store/auth"
+import { ApiError } from "@/lib/api"
+import type { Memory, MemorySearchResult } from "@/lib/api-types"
 
 const TYPES = ["all", "decision", "bug", "arch", "note"] as const
 const PRIVACY = ["all", "private", "team", "public"] as const
@@ -31,42 +26,120 @@ const glass = {
   boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 20px rgba(0,0,0,0.4)",
 } as React.CSSProperties
 
+type UnifiedMemory = {
+  id: string
+  content: string
+  type: Memory["type"]
+  privacy: Memory["privacy"]
+  tags: string[]
+  memwalMemoryId: string | null
+  author: { displayName: string | null; suiAddress: string }
+  createdAt: string
+}
+
+function authorLabel(a: { displayName: string | null; suiAddress: string }): string {
+  return a.displayName ?? a.suiAddress.slice(0, 8)
+}
+
+function toCardMemory(m: UnifiedMemory): CardMemory {
+  return {
+    id: m.id,
+    content: m.content,
+    type: m.type,
+    privacy: m.privacy,
+    tags: m.tags,
+    author: authorLabel(m.author),
+    createdAt: m.createdAt,
+    blobId: m.memwalMemoryId ?? undefined,
+  }
+}
+
+function fromMemory(m: Memory): UnifiedMemory {
+  return {
+    id: m.id,
+    content: m.content,
+    type: m.type,
+    privacy: m.privacy,
+    tags: m.tags,
+    memwalMemoryId: m.memwalMemoryId,
+    author: { displayName: m.author.displayName, suiAddress: m.author.suiAddress },
+    createdAt: m.createdAt,
+  }
+}
+
+function fromSearchResult(r: MemorySearchResult): UnifiedMemory {
+  return {
+    id: r.id,
+    content: r.content,
+    type: r.type,
+    privacy: r.privacy,
+    tags: r.tags,
+    memwalMemoryId: r.memwalMemoryId,
+    author: { displayName: r.author.displayName, suiAddress: r.author.suiAddress },
+    createdAt: r.createdAt,
+  }
+}
+
 export default function MemoriesPage() {
-  const [memories, setMemories] = React.useState<Memory[]>(MOCK_MEMORIES)
+  const workspaceId = useAuthStore((s) => s.workspace?.id)
   const [query, setQuery] = React.useState("")
+  const [debouncedQuery, setDebouncedQuery] = React.useState("")
   const [typeFilter, setTypeFilter] = React.useState<(typeof TYPES)[number]>("all")
   const [privacyFilter, setPrivacyFilter] = React.useState<(typeof PRIVACY)[number]>("all")
   const [view, setView] = React.useState<"grid" | "list">("grid")
-  const [loading, setLoading] = React.useState(true)
   const [selected, setSelected] = React.useState<string | null>(null)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
 
+  // Debounce search input
   React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700)
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 300)
     return () => clearTimeout(t)
-  }, [])
+  }, [query])
+
+  const listQuery = useQuery({
+    queryKey: ["memories", workspaceId],
+    queryFn: () => memoriesApi.list(workspaceId!, 100),
+    enabled: !!workspaceId,
+  })
+
+  const searchQuery = useQuery({
+    queryKey: ["memories-search", workspaceId, debouncedQuery],
+    queryFn: () => memoriesApi.search(workspaceId!, debouncedQuery, 20),
+    enabled: !!workspaceId && debouncedQuery.length > 0,
+  })
+
+  const isSearching = debouncedQuery.length > 0
+  const loading = isSearching ? searchQuery.isLoading : listQuery.isLoading
+
+  const memories: UnifiedMemory[] = React.useMemo(() => {
+    if (isSearching) {
+      return (searchQuery.data ?? []).map(fromSearchResult)
+    }
+    return (listQuery.data ?? []).map(fromMemory)
+  }, [isSearching, searchQuery.data, listQuery.data])
 
   const typeCounts = React.useMemo(() => ({
-    decision: memories.filter(m => m.type === "decision").length,
-    bug: memories.filter(m => m.type === "bug").length,
-    arch: memories.filter(m => m.type === "arch").length,
-    note: memories.filter(m => m.type === "note").length,
+    decision: memories.filter((m) => m.type === "decision").length,
+    bug: memories.filter((m) => m.type === "bug").length,
+    arch: memories.filter((m) => m.type === "arch").length,
+    note: memories.filter((m) => m.type === "note").length,
   }), [memories])
 
   const filtered = memories.filter((m) => {
     if (typeFilter !== "all" && m.type !== typeFilter) return false
     if (privacyFilter !== "all" && m.privacy !== privacyFilter) return false
-    if (query && !m.content.toLowerCase().includes(query.toLowerCase()) && !m.tags.some(t => t.includes(query.toLowerCase()))) return false
     return true
   })
 
   const selectedMemory = memories.find((m) => m.id === selected)
 
-  const handleDelete = (id: string) => {
-    setMemories((prev) => prev.filter((m) => m.id !== id))
-    setSelected(null)
-    toast.success("Memory deleted", { description: "Removed from your workspace" })
+  const handleDelete = (_id: string) => {
+    toast.info("Coming soon", { description: "Memory delete is not yet supported" })
   }
+
+  const errorMsg = (listQuery.error ?? searchQuery.error) instanceof ApiError
+    ? ((listQuery.error ?? searchQuery.error) as ApiError).message
+    : null
 
   return (
     <div className="flex flex-col gap-5 h-full w-full">
@@ -140,7 +213,7 @@ export default function MemoriesPage() {
             </button>
           ))}
           <span className="text-[rgba(255,255,255,0.12)]">·</span>
-          {PRIVACY.filter(p => p !== "all").map((p) => (
+          {PRIVACY.filter((p) => p !== "all").map((p) => (
             <button
               key={p}
               onClick={() => setPrivacyFilter(privacyFilter === p ? "all" : p)}
@@ -158,6 +231,10 @@ export default function MemoriesPage() {
         </div>
       </div>
 
+      {errorMsg && (
+        <p className="text-xs text-[#F87171]">Failed to load memories: {errorMsg}</p>
+      )}
+
       {/* Content area */}
       <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
         {/* Cards */}
@@ -170,14 +247,14 @@ export default function MemoriesPage() {
             <EmptyState
               image="/empty-memories.png"
               title="No memories found"
-              description={query ? `No results for "${query}". Try different keywords or remove filters.` : "No memories match the current filters."}
+              description={isSearching ? `No results for "${debouncedQuery}". Try different keywords or remove filters.` : "No memories match the current filters."}
             />
           ) : (
             <div className={cn(view === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3" : "space-y-2")}>
               {filtered.map((m) => (
                 <MemoryCard
                   key={m.id}
-                  memory={m}
+                  memory={toCardMemory(m)}
                   selected={selected === m.id}
                   onClick={() => setSelected(selected === m.id ? null : m.id)}
                 />
@@ -201,12 +278,12 @@ export default function MemoriesPage() {
 
             <p className="text-sm text-[#E8EDF0] leading-relaxed">{selectedMemory.content}</p>
 
-            {selectedMemory.blobId && (
+            {selectedMemory.memwalMemoryId && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563]">Walrus Blob ID</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#4B5563]">MemWal Memory ID</p>
                 <p className="text-xs font-mono text-[#ADFF2F] rounded-[8px] px-2.5 py-2 break-all"
                   style={{ background: "rgba(173,255,47,0.06)", border: "1px solid rgba(173,255,47,0.15)" }}>
-                  {selectedMemory.blobId}
+                  {selectedMemory.memwalMemoryId}
                 </p>
               </div>
             )}
@@ -224,7 +301,7 @@ export default function MemoriesPage() {
             </div>
 
             <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] pt-3 text-[11px] font-mono text-[#4B5563]">
-              <span>by {selectedMemory.author}</span>
+              <span>by {authorLabel(selectedMemory.author)}</span>
               <span>{timeAgo(selectedMemory.createdAt)}</span>
             </div>
             <button

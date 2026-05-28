@@ -6,8 +6,10 @@ import { usePathname } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Bell, Brain, Bot, Plug, Clock } from "lucide-react"
+import { useDisconnectWallet } from "@mysten/dapp-kit"
 import { WalletPill } from "@/components/ui/wallet-pill"
 import { Button } from "@/components/ui/button"
+import { useAuthStore } from "@/lib/store/auth"
 
 const ROUTE_LABELS: Record<string, string> = {
   "/dashboard": "Overview",
@@ -32,12 +34,9 @@ interface Notification {
   icon: NotificationIconName
 }
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  { id: 1, type: "memory", title: "Memory approved", body: "pgvector HNSW decision saved to Walrus", time: "2m ago", read: false, icon: "brain" },
-  { id: 2, type: "agent", title: "Agent run complete", body: "PR #231 reviewed · 3 memories extracted", time: "1h ago", read: false, icon: "bot" },
-  { id: 3, type: "connect", title: "New MCP connection", body: "Claude Code connected to devmind-core", time: "3h ago", read: true, icon: "plug" },
-  { id: 4, type: "memory", title: "Memory pending approval", body: "save_memory() called with 1 new decision", time: "1d ago", read: true, icon: "clock" },
-]
+// Real notifications endpoint not yet implemented — using activity feed in dashboard instead.
+// TODO: wire to /notifications endpoint when backend exposes it.
+const INITIAL_NOTIFICATIONS: Notification[] = []
 
 function NotifIcon({ icon, unread }: { icon: NotificationIconName; unread: boolean }) {
   const cls = "h-3.5 w-3.5"
@@ -101,6 +100,11 @@ function NotificationPanel() {
       </div>
 
       {/* Items */}
+      {notifications.length === 0 ? (
+        <div className="px-4 py-10 text-center text-xs text-[#4B5563] font-mono">
+          No notifications yet.
+        </div>
+      ) : (
       <ul>
         {notifications.map((n) => (
           <li
@@ -126,6 +130,7 @@ function NotificationPanel() {
           </li>
         ))}
       </ul>
+      )}
 
       {/* Footer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
@@ -163,6 +168,15 @@ function NotificationPanel() {
 export function Topbar() {
   const pathname = usePathname()
   const pageLabel = ROUTE_LABELS[pathname] ?? "Overview"
+  const workspace = useAuthStore((s) => s.workspace)
+  const user = useAuthStore((s) => s.user)
+  const clear = useAuthStore((s) => s.clear)
+  const { mutate: disconnect } = useDisconnectWallet()
+
+  const handleDisconnect = () => {
+    clear()
+    disconnect()
+  }
 
   return (
     <header
@@ -186,7 +200,7 @@ export function Topbar() {
             className="hidden sm:inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-mono text-[#8B96A0]"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            my-workspace
+            {workspace?.name ?? "no workspace"}
           </span>
           <span className="hidden sm:block text-[#4B5563] text-xs">/</span>
           <span className="text-sm font-medium text-[#E8EDF0] truncate">{pageLabel}</span>
@@ -195,7 +209,11 @@ export function Topbar() {
 
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
         <NotificationPanel />
-        <WalletPill connected address="0x7f3a9b2c8d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a" />
+        {user?.suiAddress ? (
+          <WalletPill connected address={user.suiAddress} onDisconnect={handleDisconnect} />
+        ) : (
+          <WalletPill connected={false} />
+        )}
       </div>
     </header>
   )

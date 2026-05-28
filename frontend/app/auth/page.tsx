@@ -4,38 +4,84 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { useConnectWallet, useCurrentAccount, useWallets } from "@mysten/dapp-kit"
+import {
+  useConnectWallet,
+  useCurrentAccount,
+  useSignPersonalMessage,
+  useWallets,
+} from "@mysten/dapp-kit"
+import { toast } from "sonner"
 import { Wallet, ArrowRight, Loader2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/lib/store/auth"
 import { cn } from "@/lib/utils"
+import { signAndLogin } from "@/lib/auth"
+import { workspacesApi } from "@/lib/api-endpoints"
+import { ApiError } from "@/lib/api"
 
 export default function AuthPage() {
   const router = useRouter()
   const account = useCurrentAccount()
   const wallets = useWallets()
   const { mutate: connectWallet, isPending } = useConnectWallet()
-  const { token, setSession } = useAuthStore()
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage()
+  const token = useAuthStore((s) => s.token)
+  const user = useAuthStore((s) => s.user)
+  const setWorkspace = useAuthStore((s) => s.setWorkspace)
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null)
+  const [signing, setSigning] = useState(false)
 
-  // If wallet connected and session set, go to dashboard
+  // Effect 1: Sign in when wallet connects but we don't have a token yet.
+  // Only triggers the challenge-sign-verify flow; routing happens in Effect 2/3.
   useEffect(() => {
-    if (account && token) {
-      router.push("/dashboard")
-    }
-  }, [account, token, router])
-
-  // When wallet connects, set auth session in store
-  useEffect(() => {
-    if (account && !token) {
-      setSession(`wallet_${account.address}`, {
-        id: account.address,
-        suiAddress: account.address,
-        displayName: null,
+    if (!account || token || signing) return
+    setSigning(true)
+    signAndLogin({
+      suiAddress: account.address,
+      signPersonalMessage: async ({ message }) => {
+        const result = await signPersonalMessage({ message })
+        return { signature: result.signature }
+      },
+    })
+      .catch((err) => {
+        const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Sign-in failed"
+        toast.error(msg)
       })
-      router.push("/onboarding")
+      .finally(() => setSigning(false))
+  }, [account, token, signing, signPersonalMessage])
+
+  // Effect 2: Once we have a JWT, fetch the user's workspaces and pick one.
+  // Runs independently of Effect 1 to avoid the cleanup cancelling the fetch.
+  useEffect(() => {
+    if (!token || !user || !account) return
+    if (account.address !== user.suiAddress) return // mismatch — let AuthGuard handle
+
+    let cancelled = false
+    workspacesApi
+      .list()
+      .then((workspaces) => {
+        if (cancelled) return
+        if (workspaces.length > 0) {
+          const ws = workspaces[0]
+          setWorkspace({
+            id: ws.id,
+            name: ws.name,
+            suiObjectId: ws.suiObjectId ?? null,
+          })
+          router.push("/dashboard")
+        } else {
+          router.push("/onboarding")
+        }
+      })
+      .catch((err) => {
+        const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Failed to load workspaces"
+        toast.error(msg)
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [account, token, setSession, router])
+  }, [token, user, account, setWorkspace, router])
 
   const handleConnect = (walletName: string) => {
     const wallet = wallets.find((w) => w.name === walletName)

@@ -36,17 +36,24 @@ export default async function workspaceRoutes(app: FastifyInstance) {
     };
   });
 
-  // Create new workspace (chain + DB)
+  // Create new workspace (chain + DB + provision MemWal namespace)
   app.post('/workspaces', async (req) => {
     const { name } = createWorkspaceSchema.parse(req.body);
 
     const chain = await createWorkspaceOnChain({ name, walrusRoot: '' });
+
+    // MemWal namespace = stable, workspace-scoped string. Use the on-chain workspace ID
+    // when available (collision-free across instances), else fall back to a slugified name + random.
+    const memwalNamespace =
+      chain.workspaceId.replace(/^0x/, '').slice(0, 32) ??
+      `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`;
 
     const workspace = await app.prisma.workspace.create({
       data: {
         name,
         ownerId: req.user.userId,
         suiObjectId: chain.workspaceId,
+        memwalNamespace,
         members: {
           create: { userId: req.user.userId, role: 'owner' },
         },

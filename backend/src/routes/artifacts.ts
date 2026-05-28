@@ -36,7 +36,7 @@ export default async function artifactRoutes(app: FastifyInstance) {
         authorId: req.user.userId,
         filename: body.filename,
         type: body.type,
-        walrusBlobId: blobId,
+        memwalMemoryId: blobId, // Walrus blob ID stored in this field for artifacts (raw, not via MemWal)
         sizeBytes: data.length,
         source: body.source ?? null,
         relatedMemoryId: body.relatedMemoryId ?? null,
@@ -73,7 +73,7 @@ export default async function artifactRoutes(app: FastifyInstance) {
         workspaceId: a.workspaceId,
         filename: a.filename,
         type: a.type,
-        blobId: a.walrusBlobId,
+        blobId: a.memwalMemoryId,
         sizeBytes: a.sizeBytes,
         source: a.source,
         relatedMemoryId: a.relatedMemoryId,
@@ -90,7 +90,7 @@ export default async function artifactRoutes(app: FastifyInstance) {
     if (!artifact) throw new NotFoundError('Artifact');
     await assertMember(app, artifact.workspaceId, req.user.userId);
 
-    const data = await downloadFromWalrus(artifact.walrusBlobId);
+    const data = await downloadFromWalrus(artifact.memwalMemoryId);
     return {
       success: true,
       data: {

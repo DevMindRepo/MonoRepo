@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { FileText, BarChart2, FileArchive, FileOutput, Database, Download, Eye, Trash2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { FileText, BarChart2, FileArchive, FileOutput, Database, Download, Eye, Trash2, ExternalLink, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -9,13 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button"
 import { formatBlobId, timeAgo } from "@/lib/utils"
 import { Skeleton, ArtifactRowSkeleton } from "@/components/ui/skeleton"
-
-const ARTIFACTS = [
-  { id: "art_001", filename: "drift-report-2025-05-19.md", type: "report", size: "4.2 KB", source: "PR Reviewer Agent", blobId: "9rS2tU4vW6xY8zA1bC3dE5fG", relatedMemory: "arch/api-drift-analysis", createdAt: new Date(Date.now() - 2 * 86400000) },
-  { id: "art_002", filename: "embeddings-benchmark.json", type: "dataset", size: "128 KB", source: "you", blobId: "7xK2mN9pQ1rS3tU5vW7xY9zA", createdAt: new Date(Date.now() - 4 * 86400000) },
-  { id: "art_003", filename: "api-error-log-may18.txt", type: "log", size: "22 KB", source: "PR Reviewer Agent", blobId: "3bC5dE7fG9hI1jK2lM4nO6pQ", createdAt: new Date(Date.now() - 6 * 86400000) },
-  { id: "art_004", filename: "memory-usage-report.md", type: "report", size: "8.1 KB", source: "you", blobId: "1jK8lM2nO4pQ6rS0tU2vW4xY", relatedMemory: "decision/storage-strategy", createdAt: new Date(Date.now() - 9 * 86400000) },
-]
+import { artifactsApi } from "@/lib/api-endpoints"
+import { useAuthStore } from "@/lib/store/auth"
+import { ApiError } from "@/lib/api"
+import { env } from "@/lib/env"
+import type { Artifact } from "@/lib/api-types"
 
 const typeIcon: Record<string, typeof FileText> = {
   report: FileText,
@@ -28,10 +27,10 @@ const typeIcon: Record<string, typeof FileText> = {
 type TypeKey = "dataset" | "log" | "report" | "output"
 
 const typeChip: Record<TypeKey, { bg: string; text: string }> = {
-  dataset: { bg: "rgba(96,165,250,0.1)",  text: "#60A5FA" },
-  log:     { bg: "rgba(251,191,36,0.1)",  text: "#FBBF24" },
-  report:  { bg: "rgba(173,255,47,0.1)",  text: "#ADFF2F" },
-  output:  { bg: "rgba(168,85,247,0.1)",  text: "#A855F7" },
+  dataset: { bg: "rgba(96,165,250,0.1)", text: "#60A5FA" },
+  log: { bg: "rgba(251,191,36,0.1)", text: "#FBBF24" },
+  report: { bg: "rgba(173,255,47,0.1)", text: "#ADFF2F" },
+  output: { bg: "rgba(168,85,247,0.1)", text: "#A855F7" },
 }
 
 function TypeChip({ type }: { type: string }) {
@@ -46,16 +45,63 @@ function TypeChip({ type }: { type: string }) {
   )
 }
 
-export default function ArtifactsPage() {
-  const [artifacts, setArtifacts] = React.useState(ARTIFACTS)
-  const [viewing, setViewing] = React.useState<typeof ARTIFACTS[0] | null>(null)
-  const [deletingId, setDeletingId] = React.useState<string | null>(null)
-  const [loading, setLoading] = React.useState(true)
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B"
+  const units = ["B", "KB", "MB", "GB"]
+  let v = bytes
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024
+    i++
+  }
+  return `${v.toFixed(v >= 10 ? 0 : 1)} ${units[i]}`
+}
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700)
-    return () => clearTimeout(t)
-  }, [])
+function base64ToBlob(base64: string, _filename: string): Blob {
+  const byteChars = atob(base64)
+  const byteNumbers = new Array(byteChars.length)
+  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i)
+  const byteArray = new Uint8Array(byteNumbers)
+  return new Blob([byteArray])
+}
+
+export default function ArtifactsPage() {
+  const workspaceId = useAuthStore((s) => s.workspace?.id)
+  const [viewing, setViewing] = React.useState<Artifact | null>(null)
+  const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = React.useState<string | null>(null)
+
+  const artifactsQuery = useQuery({
+    queryKey: ["artifacts", workspaceId],
+    queryFn: () => artifactsApi.list(workspaceId!),
+    enabled: !!workspaceId,
+  })
+
+  const artifacts = artifactsQuery.data ?? []
+  const loading = artifactsQuery.isLoading
+
+  const handleDownload = async (artifact: Artifact) => {
+    setDownloadingId(artifact.id)
+    try {
+      const result = await artifactsApi.get(artifact.id)
+      const blob = base64ToBlob(result.contentBase64, result.filename)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = result.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success("Downloaded", { description: result.filename })
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Download failed")
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  const walrusUrl = (blobId: string) => `${env.NEXT_PUBLIC_WALRUS_AGGREGATOR}/v1/blobs/${blobId}`
 
   return (
     <div className="space-y-5 w-full">
@@ -64,7 +110,13 @@ export default function ArtifactsPage() {
         <p className="text-sm text-[#8B96A0] mt-0.5">Files saved by agents and workspace members</p>
       </div>
 
-      {artifacts.length === 0 ? (
+      {artifactsQuery.error && (
+        <p className="text-xs text-[#F87171]">
+          Failed to load artifacts: {artifactsQuery.error instanceof ApiError ? artifactsQuery.error.message : "Network error"}
+        </p>
+      )}
+
+      {!loading && artifacts.length === 0 ? (
         <EmptyState
           image="/empty-artifacts.png"
           title="No artifacts yet"
@@ -104,8 +156,10 @@ export default function ArtifactsPage() {
             {/* Rows */}
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => <ArtifactRowSkeleton key={i} />)
-            ) : artifacts.map(({ id, filename, type, size, source, blobId, relatedMemory, createdAt }) => {
+            ) : artifacts.map((artifact) => {
+              const { id, filename, type, sizeBytes, source, blobId, relatedMemoryId, createdAt } = artifact
               const Icon = typeIcon[type] ?? FileText
+              const isDownloading = downloadingId === id
               return (
                 <div
                   key={id}
@@ -119,9 +173,9 @@ export default function ArtifactsPage() {
                       <p className="text-sm font-medium text-[#E8EDF0] truncate">{filename}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <TypeChip type={type} />
-                        {relatedMemory && (
+                        {relatedMemoryId && (
                           <span className="text-[10px] font-mono text-[#8B96A0] truncate">
-                            → {relatedMemory}
+                            → {relatedMemoryId.slice(0, 12)}
                           </span>
                         )}
                       </div>
@@ -129,32 +183,42 @@ export default function ArtifactsPage() {
                   </div>
 
                   {/* Size */}
-                  <span className="text-xs font-mono text-[#8B96A0]">{size}</span>
+                  <span className="text-xs font-mono text-[#8B96A0]">{formatBytes(sizeBytes)}</span>
 
                   {/* Source */}
-                  <span className="text-xs text-[#8B96A0] truncate pr-2">{source}</span>
+                  <span className="text-xs text-[#8B96A0] truncate pr-2">{source ?? "—"}</span>
 
                   {/* Saved */}
                   <span className="text-xs font-mono text-[#8B96A0]">{timeAgo(createdAt)}</span>
 
                   {/* Blob ID */}
-                  <span className="text-xs font-mono text-[#8B96A0]">{formatBlobId(blobId)}</span>
+                  <a
+                    href={walrusUrl(blobId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono text-[#8B96A0] hover:text-[#ADFF2F] inline-flex items-center gap-1 truncate"
+                    title="View on Walrus"
+                  >
+                    {formatBlobId(blobId)}
+                    <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                  </a>
 
                   {/* Actions — fade in on row hover */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                     <button
-                      onClick={() => setViewing({ id, filename, type, size, source, blobId, relatedMemory, createdAt })}
+                      onClick={() => setViewing(artifact)}
                       className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#E8EDF0] hover:bg-[rgba(255,255,255,0.08)] cursor-pointer"
                       title="View details"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => toast.success("Downloading…", { description: filename })}
-                      className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#60A5FA] hover:bg-[rgba(96,165,250,0.1)] cursor-pointer"
+                      onClick={() => handleDownload(artifact)}
+                      disabled={isDownloading}
+                      className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#60A5FA] hover:bg-[rgba(96,165,250,0.1)] cursor-pointer disabled:opacity-50"
                       title="Download"
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={() => setDeletingId(id)}
@@ -187,8 +251,10 @@ export default function ArtifactsPage() {
                   <Skeleton className="h-3 w-full" />
                 </div>
               ))
-            ) : artifacts.map(({ id, filename, type, size, source, blobId, relatedMemory, createdAt }) => {
+            ) : artifacts.map((artifact) => {
+              const { id, filename, type, sizeBytes, source, blobId, relatedMemoryId, createdAt } = artifact
               const Icon = typeIcon[type] ?? FileText
+              const isDownloading = downloadingId === id
               return (
                 <div
                   key={id}
@@ -205,23 +271,24 @@ export default function ArtifactsPage() {
                       <p className="text-sm font-medium text-[#E8EDF0] truncate">{filename}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <TypeChip type={type} />
-                        <span className="text-[10px] font-mono text-[#8B96A0]">{size}</span>
+                        <span className="text-[10px] font-mono text-[#8B96A0]">{formatBytes(sizeBytes)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => setViewing({ id, filename, type, size, source, blobId, relatedMemory, createdAt })}
+                        onClick={() => setViewing(artifact)}
                         className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#E8EDF0] hover:bg-[rgba(255,255,255,0.08)] cursor-pointer"
                         title="View details"
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => toast.success("Downloading…", { description: filename })}
-                        className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#60A5FA] hover:bg-[rgba(96,165,250,0.1)] cursor-pointer"
+                        onClick={() => handleDownload(artifact)}
+                        disabled={isDownloading}
+                        className="h-7 w-7 rounded-[8px] flex items-center justify-center transition-all duration-150 text-[#8B96A0] hover:text-[#60A5FA] hover:bg-[rgba(96,165,250,0.1)] cursor-pointer disabled:opacity-50"
                         title="Download"
                       >
-                        <Download className="h-3.5 w-3.5" />
+                        {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                       </button>
                       <button
                         onClick={() => setDeletingId(id)}
@@ -236,12 +303,14 @@ export default function ArtifactsPage() {
                     className="flex items-center justify-between text-[10px] font-mono text-[#8B96A0] pt-2"
                     style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
                   >
-                    <span>{source}</span>
+                    <span>{source ?? "—"}</span>
                     <span>{timeAgo(createdAt)}</span>
-                    <span className="truncate ml-2 max-w-[120px]">{formatBlobId(blobId)}</span>
+                    <a href={walrusUrl(blobId)} target="_blank" rel="noopener noreferrer" className="truncate ml-2 max-w-[120px] hover:text-[#ADFF2F]">
+                      {formatBlobId(blobId)}
+                    </a>
                   </div>
-                  {relatedMemory && (
-                    <p className="text-[10px] font-mono text-[#8B96A0]">→ {relatedMemory}</p>
+                  {relatedMemoryId && (
+                    <p className="text-[10px] font-mono text-[#8B96A0]">→ {relatedMemoryId.slice(0, 16)}</p>
                   )}
                 </div>
               )
@@ -260,10 +329,10 @@ export default function ArtifactsPage() {
             <div className="space-y-3 font-mono text-xs">
               {([
                 ["Type", viewing.type],
-                ["Size", viewing.size],
-                ["Source", viewing.source],
+                ["Size", formatBytes(viewing.sizeBytes)],
+                ["Source", viewing.source ?? "—"],
                 ["Walrus Blob", viewing.blobId],
-                ...(viewing.relatedMemory ? [["Related memory", viewing.relatedMemory]] : []),
+                ...(viewing.relatedMemoryId ? [["Related memory", viewing.relatedMemoryId]] : []),
               ] as Array<[string, string]>).map(([k, v]) => (
                 <div key={k} className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between gap-x-4">
                   <span className="text-[10px] uppercase tracking-widest text-[#8B96A0]">{k}</span>
@@ -275,7 +344,7 @@ export default function ArtifactsPage() {
           <DialogFooter>
             <Button variant="ghost" size="sm" onClick={() => setViewing(null)}>Close</Button>
             <Button variant="primary" size="sm" onClick={() => {
-              if (viewing) toast.success("Downloading…", { description: viewing.filename })
+              if (viewing) handleDownload(viewing)
               setViewing(null)
             }}>
               Download
@@ -292,10 +361,8 @@ export default function ArtifactsPage() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={() => {
-          if (deletingId) {
-            setArtifacts((prev) => prev.filter((a) => a.id !== deletingId))
-            toast.success("Artifact deleted")
-          }
+          // Backend does not expose DELETE for artifacts yet.
+          toast.info("Coming soon", { description: "Artifact delete is not yet supported" })
           setDeletingId(null)
         }}
       />

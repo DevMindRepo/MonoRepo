@@ -1,105 +1,122 @@
 "use client"
 
 import * as React from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CheckCircle, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
-import { ApprovalCard, type PendingMemory } from "@/components/app/approval-card"
+import { ApprovalCard, type PendingMemory as CardPendingMemory } from "@/components/app/approval-card"
 import { EmptyState } from "@/components/ui/empty-state"
-import { Skeleton, ApprovalCardSkeleton } from "@/components/ui/skeleton"
+import { ApprovalCardSkeleton } from "@/components/ui/skeleton"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { EditMemoryDialog, type EditableMemory } from "@/components/app/edit-memory-dialog"
+import { pendingApi } from "@/lib/api-endpoints"
+import { useAuthStore } from "@/lib/store/auth"
+import { ApiError } from "@/lib/api"
+import type { PendingMemory } from "@/lib/api-types"
 
-const MOCK_PENDING: PendingMemory[] = [
-  {
-    id: "pend_001",
-    content: `Decision: Use pgvector extension on PostgreSQL 16 for all semantic search operations in DevMind.
-
-Rationale: pgvector integrates directly with our existing Prisma + PostgreSQL stack. Benchmarks show 95th percentile query latency of ~12ms on 100k vectors with HNSW index. Avoids introducing a separate vector DB (Pinecone, Weaviate) and associated network latency + cost.
-
-Migration path: add vector column to memories table, backfill embeddings via batch job, create HNSW index with m=16 ef_construction=64.`,
-    type: "decision",
-    tags: ["database", "vector-search", "postgresql", "performance"],
-    source: "Claude Code",
-    sessionId: "sess_abc123",
-    workspaceName: "devmind-core",
-    createdAt: new Date(Date.now() - 8 * 60000),
-  },
-  {
-    id: "pend_002",
-    content: `Bug: React 19 hydration mismatch when using Zustand with SSR in Next.js 16.
-
-Root cause: Zustand store initializes on server with default state, but client hydrates with a different state if localStorage is read during initialization. The mismatch triggers hydration errors.
-
-Fix: wrap localStorage reads in useEffect, or use the zustand/react/shallow selector with suppressHydrationWarning on the container div. Confirmed working with Zustand 5.0.
-
-Note: NEXT_PUBLIC_API_KEY=sk-abc123-do-not-commit`,
-    type: "bug",
-    tags: ["react19", "zustand", "nextjs", "ssr", "hydration"],
-    source: "Claude Code",
-    sessionId: "sess_def456",
-    workspaceName: "devmind-core",
-    createdAt: new Date(Date.now() - 25 * 60000),
-    secrets: [
-      { pattern: "API Key", index: 278, length: 30 },
-    ],
-  },
-  {
-    id: "pend_003",
-    content: `Architecture note: Seal Minimal implementation for DevMind MVP.
-
-DevMind backend acts as the decryption proxy using a master Sui wallet. The seal_approve function in the Move contract checks that ctx.sender() == DEVMIND_MASTER_WALLET. This is intentionally simple for Phase 1 — it means users trust DevMind to decrypt on their behalf.
-
-Phase 2 roadmap: migrate to Seal Full with on-chain access control per workspace member. Each member gets their own encryption key derived from their Sui wallet.`,
-    type: "arch",
-    tags: ["seal", "encryption", "sui", "phase1", "security"],
-    source: "Cursor",
-    sessionId: "sess_ghi789",
-    workspaceName: "devmind-core",
-    createdAt: new Date(Date.now() - 60 * 60000),
-  },
-]
+function toCardPending(p: PendingMemory): CardPendingMemory {
+  return {
+    id: p.id,
+    content: p.content,
+    type: p.type,
+    tags: p.tags,
+    source: p.source,
+    sessionId: p.sessionId ?? "",
+    workspaceName: p.workspaceName ?? "",
+    createdAt: p.createdAt,
+    secrets: p.secrets,
+  }
+}
 
 export default function ApprovalQueuePage() {
-  const [items, setItems] = React.useState<PendingMemory[]>(MOCK_PENDING)
-  const [loadingId, setLoadingId] = React.useState<string | null>(null)
+  const workspaceId = useAuthStore((s) => s.workspace?.id)
+  const queryClient = useQueryClient()
+
   const [approvedId, setApprovedId] = React.useState<string | null>(null)
-  const [loading, setLoading] = React.useState(true)
   const [rejectId, setRejectId] = React.useState<string | null>(null)
   const [approveId, setApproveId] = React.useState<string | null>(null)
+  // Local edits stash: keep user changes prior to approve
+  const [pendingEdits, setPendingEdits] = React.useState<
+    Record<string, { content: string; tags: string[]; type: PendingMemory["type"] }>
+  >({})
   const [editMemory, setEditMemory] = React.useState<EditableMemory | null>(null)
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800)
-    return () => clearTimeout(t)
-  }, [])
+  const pendingQuery = useQuery({
+    queryKey: ["pending", workspaceId],
+    queryFn: () => pendingApi.list(workspaceId!),
+    enabled: !!workspaceId,
+  })
+
+  const rawItems = pendingQuery.data ?? []
+
+  // Apply local edits over server data
+  const items: PendingMemory[] = React.useMemo(
+    () =>
+      rawItems.map((m) => {
+        const edit = pendingEdits[m.id]
+        if (!edit) return m
+        return { ...m, content: edit.content, tags: edit.tags, type: edit.type }
+      }),
+    [rawItems, pendingEdits],
+  )
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending", workspaceId] })
+    queryClient.invalidateQueries({ queryKey: ["memories", workspaceId] })
+    queryClient.invalidateQueries({ queryKey: ["stats", workspaceId] })
+    queryClient.invalidateQueries({ queryKey: ["activity", workspaceId] })
+  }
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const edit = pendingEdits[id]
+      return pendingApi.approve(id, edit?.content, edit?.tags)
+    },
+    onMutate: (id) => {
+      setApprovedId(id)
+    },
+    onSuccess: (_data, id) => {
+      toast.success("Memory approved", { description: "Encrypted and uploaded to Walrus" })
+      setPendingEdits((prev) => {
+        const { [id]: _omit, ...rest } = prev
+        return rest
+      })
+      invalidateAll()
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Approval failed")
+    },
+    onSettled: () => {
+      setApprovedId(null)
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => pendingApi.reject(id),
+    onSuccess: (_data, id) => {
+      toast.success("Memory rejected", { description: "Discarded from pending queue" })
+      setPendingEdits((prev) => {
+        const { [id]: _omit, ...rest } = prev
+        return rest
+      })
+      invalidateAll()
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Reject failed")
+    },
+  })
 
   const requestApprove = (id: string) => {
     const m = items.find((x) => x.id === id)
     if (m?.secrets && m.secrets.length > 0) {
       setApproveId(id)
     } else {
-      void doApprove(id)
+      approveMutation.mutate(id)
     }
-  }
-
-  const doApprove = async (id: string) => {
-    setLoadingId(id)
-    await new Promise((r) => setTimeout(r, 1200))
-    setApprovedId(id)
-    await new Promise((r) => setTimeout(r, 600))
-    setItems((prev) => prev.filter((m) => m.id !== id))
-    setLoadingId(null)
-    setApprovedId(null)
-    toast.success("Memory approved", { description: "Encrypted and uploaded to Walrus" })
   }
 
   const requestReject = (id: string) => {
     setRejectId(id)
-  }
-
-  const doReject = (id: string) => {
-    setItems((prev) => prev.filter((m) => m.id !== id))
-    toast.success("Memory rejected", { description: "Discarded from pending queue" })
   }
 
   const requestEdit = (id: string) => {
@@ -114,15 +131,22 @@ export default function ApprovalQueuePage() {
   }
 
   const handleSaveEdit = (updated: EditableMemory) => {
-    setItems((prev) => prev.map((m) =>
-      m.id === updated.id
-        ? { ...m, content: updated.content, type: updated.type, tags: updated.tags }
-        : m
-    ))
+    setPendingEdits((prev) => ({
+      ...prev,
+      [updated.id]: {
+        content: updated.content,
+        tags: updated.tags,
+        type: updated.type,
+      },
+    }))
     toast.success("Memory updated", { description: "Changes saved. Approve to encrypt and upload." })
   }
 
   const hasSecrets = items.some((m) => (m.secrets?.length ?? 0) > 0)
+  const loading = pendingQuery.isLoading
+  const loadingId =
+    approveMutation.isPending ? approveMutation.variables ?? null :
+    rejectMutation.isPending ? rejectMutation.variables ?? null : null
 
   return (
     <div className="space-y-5 w-full">
@@ -149,6 +173,12 @@ export default function ApprovalQueuePage() {
         </div>
       )}
 
+      {pendingQuery.error && (
+        <p className="text-xs text-[#F87171]">
+          Failed to load pending memories: {pendingQuery.error instanceof ApiError ? pendingQuery.error.message : "Network error"}
+        </p>
+      )}
+
       {loading ? (
         <div className="space-y-4">
           <ApprovalCardSkeleton />
@@ -173,7 +203,7 @@ export default function ApprovalQueuePage() {
                 </div>
               )}
               <ApprovalCard
-                memory={memory}
+                memory={toCardPending(memory)}
                 onApprove={requestApprove}
                 onEdit={requestEdit}
                 onReject={requestReject}
@@ -191,7 +221,7 @@ export default function ApprovalQueuePage() {
         description="The memory will be discarded from the pending queue. This action cannot be undone."
         confirmLabel="Reject"
         variant="destructive"
-        onConfirm={() => { if (rejectId) doReject(rejectId); setRejectId(null) }}
+        onConfirm={() => { if (rejectId) rejectMutation.mutate(rejectId); setRejectId(null) }}
       />
 
       <ConfirmDialog
@@ -201,7 +231,7 @@ export default function ApprovalQueuePage() {
         description="This memory contains highlighted text that may be a secret (API key, token, etc.). It will be encrypted before storage, but consider editing first to remove sensitive values."
         confirmLabel="Approve anyway"
         variant="destructive"
-        onConfirm={async () => { if (approveId) await doApprove(approveId); setApproveId(null) }}
+        onConfirm={() => { if (approveId) approveMutation.mutate(approveId); setApproveId(null) }}
       />
 
       <EditMemoryDialog

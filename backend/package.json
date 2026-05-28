@@ -16,9 +16,8 @@
     "bootstrap-mcp": "dotenv -e ../.env -- tsx scripts/bootstrap-mcp.ts"
   },
   "dependencies": {
-    "@devmind/memwal-client": "workspace:*",
-    "@devmind/seal-client": "workspace:*",
     "@devmind/shared": "workspace:*",
+    "@mysten-incubation/memwal": "^0.0.5",
     "@fastify/cors": "^10.0.0",
     "@fastify/jwt": "^9.0.0",
     "@fastify/websocket": "^11.0.0",

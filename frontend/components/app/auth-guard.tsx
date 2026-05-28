@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit"
 import { useAuthStore } from "@/lib/store/auth"
 
 interface AuthGuardProps {
@@ -17,6 +18,9 @@ interface AuthGuardProps {
  * - Waits for zustand hydration to avoid false redirects on page reload
  * - Redirects to /auth if no token
  * - Optionally redirects to /onboarding if no workspace selected
+ * - Detects wallet/session mismatch: if the connected wallet address differs
+ *   from the stored user (e.g. user switched accounts in their wallet extension)
+ *   we clear the session and bounce back to /auth so a fresh challenge is signed.
  */
 export function AuthGuard({
   children,
@@ -24,10 +28,22 @@ export function AuthGuard({
   requireWorkspace = false,
 }: AuthGuardProps) {
   const router = useRouter()
-  const { token, workspace, hasHydrated } = useAuthStore()
+  const { token, user, workspace, hasHydrated, clear } = useAuthStore()
+  const currentAccount = useCurrentAccount()
+  const { mutate: disconnect } = useDisconnectWallet()
 
   React.useEffect(() => {
     if (!hasHydrated) return
+
+    // Wallet address mismatch — user switched accounts in their wallet extension
+    // while still holding a stale JWT for a different user. Clear and force re-auth.
+    if (token && user && currentAccount && currentAccount.address !== user.suiAddress) {
+      clear()
+      disconnect()
+      router.replace(redirectTo)
+      return
+    }
+
     if (!token) {
       router.replace(redirectTo)
       return
@@ -35,7 +51,7 @@ export function AuthGuard({
     if (requireWorkspace && !workspace) {
       router.replace("/onboarding")
     }
-  }, [hasHydrated, token, workspace, requireWorkspace, redirectTo, router])
+  }, [hasHydrated, token, user, workspace, currentAccount, requireWorkspace, redirectTo, router, clear, disconnect])
 
   if (!hasHydrated) {
     return (

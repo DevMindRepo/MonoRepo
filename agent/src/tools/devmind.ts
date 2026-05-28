@@ -7,7 +7,7 @@ export interface MemoryHit {
   type: string;
   privacy: string;
   tags: string[];
-  blobId: string | null;
+  memwalMemoryId: string | null;
   source: string | null;
   createdAt: string;
   author: { displayName: string | null; suiAddress: string };

@@ -19,16 +19,17 @@ const envSchema = z.object({
   SEAL_POLICY_PACKAGE_ID: z.string().default('0x0'),
   SEAL_POLICY_OBJECT_ID: z.string().default('0x0'),
 
-  // Walrus
-  WALRUS_PUBLISHER_URL: z.string().url().default('https://publisher.walrus-testnet.walrus.space'),
+  // Walrus (kept for aggregator URL — used in dashboard "view raw blob" links)
   WALRUS_AGGREGATOR_URL: z.string().url().default('https://aggregator.walrus-testnet.walrus.space'),
-  WALRUS_EPOCHS: z.coerce.number().default(5),
 
-  // Gemini
+  // MemWal (Walrus Memory layer — handles storage, encryption, embedding, search)
+  MEMWAL_RELAYER_URL: z.string().url().default('https://relayer.staging.memwal.ai'),
+  MEMWAL_ACCOUNT_ID: z.string().min(1),
+  MEMWAL_DELEGATE_KEY: z.string().min(1),
+
+  // Gemini (kept for LLM reasoning in agents + GitHub webhook decision extractor)
   GEMINI_API_KEY: z.string().min(1),
-  GEMINI_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
-  GEMINI_EMBEDDING_DIM: z.coerce.number().default(768),
-  GEMINI_CHAT_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_CHAT_MODEL: z.string().default('gemini-2.5-flash-lite'),
 
   // GitHub
   GITHUB_WEBHOOK_SECRET: z.string().optional(),
