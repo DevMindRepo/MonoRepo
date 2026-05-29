@@ -39,6 +39,7 @@ model Workspace {
   apiTokens       ApiToken[]
   webhooks        GitHubWebhook[]
   agentRuns       AgentRun[]
+  incidents       Incident[]
 }
 
 model WorkspaceMember {
@@ -154,10 +155,49 @@ model AgentRun {
   reviewPosted     Boolean  @default(false)
   durationMs       Int?
   errorMessage     String?
+  incidentId       String?  // Link to Incident when this run is part of incident-response pipeline
   createdAt        DateTime @default(now())
   completedAt      DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  incident  Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, createdAt])
+  @@index([incidentId])
+}
+
+model Incident {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  type         String   // error | attack | performance | custom
+  severity     String   @default("medium") // low | medium | high | critical
+  status       String   @default("new")    // new | triaging | researching | responding | resolved | failed
+  service      String?  // user-defined service name (e.g. "checkout-api")
+  hostname     String?  // server hostname where incident occurred
+  message      String   // short error message / event description
+  stack        String?  // optional stack trace
+  metadata     Json?    // arbitrary extra data from SDK (env, version, etc)
+
+  // Pipeline outputs (filled as agents run)
+  triageNotes      String?
+  classification   String?
+  researcherNotes  String?
+  recallSummary    String?
+  responderFix     String?
+  suggestedActions String[]
+  confidence       Float?   // 0..1
+
+  // User-provided resolution after fix
+  resolutionNotes  String?
+  resolvedAt       DateTime?
+  resolvedBy       String?  // user.id
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentRuns AgentRun[]
+
+  @@index([workspaceId, createdAt])
+  @@index([status])
 }

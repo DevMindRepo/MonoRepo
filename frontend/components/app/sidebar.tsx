@@ -14,6 +14,7 @@ import {
   Plug,
   ChevronLeft,
   ChevronRight,
+  Siren,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +31,7 @@ const NAV_GROUPS = [
     label: "Tools",
     items: [
       { href: "/agent-timeline", icon: Clock, label: "Agent Timeline" },
+      { href: "/incidents", icon: Siren, label: "Incidents" },
       { href: "/artifacts", icon: Package, label: "Artifacts" },
       { href: "/connect", icon: Plug, label: "Connect AI" },
     ],

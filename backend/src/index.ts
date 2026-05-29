@@ -19,6 +19,8 @@ import apiTokenRoutes from './routes/api-tokens.js';
 import statsRoutes from './routes/stats.js';
 import webhookRoutes from './routes/webhooks.js';
 import agentRunRoutes from './routes/agent-runs.js';
+import incidentRoutes from './routes/incidents.js';
+import { startIncidentWorker } from './workers/incident-worker.js';
 
 async function main() {
   const env = getEnv();
@@ -55,9 +57,15 @@ async function main() {
   await app.register(statsRoutes);
   await app.register(webhookRoutes);
   await app.register(agentRunRoutes);
+  await app.register(incidentRoutes);
 
   await app.listen({ port: env.PORT, host: '0.0.0.0' });
   app.log.info(`DevMind API listening on :${env.PORT} (${env.SUI_NETWORK})`);
+
+  // Long-running worker: poll Redis queue for incident IDs, run agent pipeline.
+  startIncidentWorker(app).catch((err) => {
+    app.log.error({ err }, 'Incident worker crashed');
+  });
 
   const shutdown = async () => {
     app.log.info('Shutting down...');

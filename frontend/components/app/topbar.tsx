@@ -16,6 +16,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/memories": "Memories",
   "/approval-queue": "Approval Queue",
   "/agent-timeline": "Agent Timeline",
+  "/incidents": "Incidents",
   "/artifacts": "Artifacts",
   "/connect": "Connect AI",
   "/settings": "Settings",

@@ -10,6 +10,8 @@ import type {
   AuthVerifyResponse,
   GitHubWebhook,
   GitHubWebhookWithSecret,
+  Incident,
+  IncidentWithRuns,
   Memory,
   MemoryPrivacy,
   MemorySearchResult,
@@ -163,6 +165,20 @@ export const agentRunsApi = {
     apiClient.get<AgentRun[]>("/agent-runs", { params: { workspaceId, limit } }),
 
   get: (id: string) => apiClient.get<AgentRun>(`/agent-runs/${id}`),
+}
+
+export const incidentsApi = {
+  list: (workspaceId: string, opts?: { limit?: number; status?: string }) =>
+    apiClient.get<Incident[]>("/incidents", {
+      params: { workspaceId, limit: opts?.limit ?? 50, status: opts?.status },
+    }),
+
+  get: (id: string) => apiClient.get<IncidentWithRuns>(`/incidents/${id}`),
+
+  resolve: (id: string, resolutionNotes: string) =>
+    apiClient.post<Incident>(`/incidents/${id}/resolve`, { resolutionNotes }),
+
+  retry: (id: string) => apiClient.post<{ id: string; status: string }>(`/incidents/${id}/retry`),
 }
 
 export const statsApi = {

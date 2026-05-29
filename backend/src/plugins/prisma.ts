@@ -9,8 +9,10 @@ declare module 'fastify' {
 }
 
 export default fp(async (app: FastifyInstance) => {
+  // Set LOG_PRISMA_QUERIES=true to see every SQL query (very noisy with polling).
+  const verbose = process.env.LOG_PRISMA_QUERIES === 'true';
   const prisma = new PrismaClient({
-    log: app.log.level === 'debug' ? ['query', 'error', 'warn'] : ['error', 'warn'],
+    log: verbose ? ['query', 'error', 'warn'] : ['error', 'warn'],
   });
 
   await prisma.$connect();

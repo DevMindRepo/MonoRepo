@@ -137,6 +137,39 @@ export interface GitHubWebhookWithSecret extends GitHubWebhook {
   message: string
 }
 
+export type IncidentType = "error" | "attack" | "performance" | "custom"
+export type IncidentSeverity = "low" | "medium" | "high" | "critical"
+export type IncidentStatus = "new" | "triaging" | "researching" | "responding" | "resolved" | "failed"
+
+export interface Incident {
+  id: string
+  workspaceId: string
+  type: IncidentType
+  severity: IncidentSeverity
+  status: IncidentStatus
+  service: string | null
+  hostname: string | null
+  message: string
+  stack: string | null
+  metadata: Record<string, unknown> | null
+  triageNotes: string | null
+  classification: string | null
+  researcherNotes: string | null
+  recallSummary: string | null
+  responderFix: string | null
+  suggestedActions: string[]
+  confidence: number | null
+  resolutionNotes: string | null
+  resolvedAt: string | null
+  resolvedBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IncidentWithRuns extends Incident {
+  agentRuns: AgentRun[]
+}
+
 export interface AgentRun {
   id: string
   workspaceId: string

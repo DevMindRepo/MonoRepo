@@ -1,0 +1,52 @@
+{
+  "name": "devmind-monitor",
+  "version": "0.1.0",
+  "description": "Production monitoring SDK for DevMind — captures errors, sends them to DevMind agents for autonomous triage + memory-based incident response.",
+  "keywords": [
+    "devmind",
+    "monitoring",
+    "incident-response",
+    "observability",
+    "ai-agent",
+    "walrus",
+    "memwal"
+  ],
+  "license": "MIT",
+  "author": "DevMind",
+  "homepage": "https://github.com/DevMindRepo/MonoRepo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevMindRepo/MonoRepo.git",
+    "directory": "monitor-sdk"
+  },
+  "bugs": "https://github.com/DevMindRepo/MonoRepo/issues",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

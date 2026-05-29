@@ -3,6 +3,7 @@ packages:
   - backend
   - mcp-server
   - agent
+  - monitor-sdk
   - packages/*
 
 ignoredBuiltDependencies:
