@@ -17,7 +17,8 @@ COPY packages/shared/package.json packages/shared/
 # Install only what the backend needs (and its workspace deps)
 RUN pnpm install --filter @devmind/api... --frozen-lockfile
 
-# Copy source
+# Copy source (including root tsconfig.base.json which backend's tsconfig extends)
+COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY backend backend
 

@@ -22,10 +22,11 @@ export default fp(async (app: FastifyInstance) => {
       });
     }
 
-    if (error.statusCode && error.statusCode < 500) {
-      return reply.status(error.statusCode).send({
+    const err = error as { statusCode?: number; message?: string };
+    if (err.statusCode && err.statusCode < 500) {
+      return reply.status(err.statusCode).send({
         success: false,
-        error: error.message,
+        error: err.message ?? 'Error',
       });
     }
 

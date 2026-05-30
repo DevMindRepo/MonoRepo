@@ -17,7 +17,7 @@ export async function uploadToWalrus(data: Uint8Array): Promise<string> {
   const res = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/octet-stream' },
-    body: data,
+    body: data as unknown as ArrayBuffer,
   });
 
   if (!res.ok) {

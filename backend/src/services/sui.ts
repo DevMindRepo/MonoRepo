@@ -11,7 +11,10 @@ let cachedKeypair: Ed25519Keypair | null = null;
 export function getSuiClient(): SuiJsonRpcClient {
   if (cachedClient) return cachedClient;
   const env = getEnv();
-  cachedClient = new SuiJsonRpcClient({ url: getJsonRpcFullnodeUrl(env.SUI_NETWORK) });
+  cachedClient = new SuiJsonRpcClient({
+    url: getJsonRpcFullnodeUrl(env.SUI_NETWORK),
+    network: env.SUI_NETWORK,
+  });
   return cachedClient;
 }
 
