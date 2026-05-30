@@ -28,7 +28,9 @@ export class ApiError extends Error {
 
 export const api = axios.create({
   baseURL: env.NEXT_PUBLIC_API_URL,
-  timeout: 30_000,
+  // 120s: MemWal rememberAndWait (Seal encrypt + Walrus upload + index)
+  // can take 30-60s on Walrus testnet when the aggregator is slow.
+  timeout: 120_000,
   headers: { "Content-Type": "application/json" },
 })
 
