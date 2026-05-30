@@ -6,8 +6,9 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "dotenv -e ../.env -- tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "dotenv -e ../.env -- node dist/index.js",
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "start:local": "dotenv -e ../.env -- node dist/index.js",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "dotenv -e ../.env -- prisma generate",
     "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev",

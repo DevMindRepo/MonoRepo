@@ -1,0 +1,47 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.cache
+**/build
+
+# Env files (Railway provides via dashboard)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Git / IDE
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Tests / docs we don't need at runtime
+**/*.test.ts
+**/*.spec.ts
+docs/
+
+# Frontend not included in backend image
+frontend/
+
+# MCP & monitor SDKs deployed separately (npm)
+mcp-server/
+monitor-sdk/
+agent/
+
+# Smart contract not needed
+smart_contract/
+
+# Local data / scripts
+**/cashlog.db
+**/.docker
+
+# Memory / plan docs (private)
+PLAN.md
+PROGRESS.md
+.mcp.json
