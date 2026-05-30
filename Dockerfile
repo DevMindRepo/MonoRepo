@@ -22,7 +22,11 @@ COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY backend backend
 
-# Build
+# Build shared first (backend imports compiled dist/index.js from @devmind/shared)
+WORKDIR /app/packages/shared
+RUN pnpm run build
+
+# Build backend
 WORKDIR /app/backend
 RUN pnpm run build
 
