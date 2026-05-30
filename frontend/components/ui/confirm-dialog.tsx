@@ -49,6 +49,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        hideClose
         className="p-0 border-0 bg-transparent shadow-none max-w-[380px] w-full"
         style={{ boxShadow: "none" }}
       >
