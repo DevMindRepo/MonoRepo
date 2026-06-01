@@ -1,3 +1,4 @@
+import { SmoothScroll } from "@/components/app/smooth-scroll"
 import { Navbar } from "@/components/app/navbar"
 import { TopShaderBg } from "@/components/app/top-shader-bg"
 import { HeroSection } from "@/components/app/sections/hero"
@@ -14,20 +15,22 @@ import { FooterSection } from "@/components/app/sections/footer"
 
 export default function LandingPage() {
   return (
-    <main className="relative bg-[#070B0E] text-[#E8EDF0] overflow-x-hidden">
-      <TopShaderBg />
-      <Navbar />
-      <HeroSection />
-      <ProblemSection />
-      <HowItWorksSection />
-      <AgentDemoSection />
-      <AgentOrbitalSection />
-      <ShipSection />
-      <ArchitectureSection />
-      <CodeSection />
-      <EcosystemSection />
-      <FaqSection />
-      <FooterSection />
-    </main>
+    <SmoothScroll>
+      <main className="relative bg-[#070B0E] text-[#E8EDF0] overflow-x-hidden">
+        <TopShaderBg />
+        <Navbar />
+        <HeroSection />
+        <ProblemSection />
+        <HowItWorksSection />
+        <AgentDemoSection />
+        <AgentOrbitalSection />
+        <ShipSection />
+        <ArchitectureSection />
+        <CodeSection />
+        <EcosystemSection />
+        <FaqSection />
+        <FooterSection />
+      </main>
+    </SmoothScroll>
   )
 }

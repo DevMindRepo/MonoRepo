@@ -1,12 +1,62 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CodePill } from "@/components/ui/code-pill"
 import { Play } from "lucide-react"
 
+// Geometry measured from /rotate/coreandtentacles.png (596×488, transparent).
+// The image rotates about its glowing core (which sits slightly above the
+// bounding-box center), and a branded pod is anchored at each tentacle tip.
+const CORE_ORIGIN = "50.2% 45.7%" // core center as % of the image — the rotation pivot
+const POD_PCT = 34 // pod ("remora") size, as % of the container width
+
+// Each pod's resting position = its tentacle tip, as % of the image box.
+// Mapped to the original solar-system layout by matching tentacle angle.
+const NODES = [
+  { left: 26.8, top: 7.4, src: "/rotate/Sui.png", label: "Sui" },
+  { left: 67.8, top: 2.3, src: "/rotate/ClaudeCode.png", label: "Claude Code" },
+  { left: 91.3, top: 21.1, src: "/rotate/cursor.png", label: "Cursor" },
+  { left: 94.0, top: 69.1, src: "/rotate/github.png", label: "GitHub" },
+  { left: 54.0, top: 95.9, src: "/rotate/mcp.png", label: "MCP" },
+  { left: 11.7, top: 83.4, src: "/rotate/Walrus.png", label: "Walrus" },
+  { left: 4.2, top: 38.5, src: "/rotate/Seal.png", label: "Seal" },
+]
+
 export function HeroSection() {
+  const orbRef = useRef<HTMLDivElement>(null)
+  const iconRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    // Respect users who prefer reduced motion — leave everything static for them.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+    const orb = orbRef.current
+    if (!orb) return
+
+    // Slow idle rotation — one full turn per minute. The core + tentacles spin
+    // about the core; the pods orbit along with them but counter-rotate so they
+    // (and their labels) stay upright.
+    const DEG_PER_SEC = 6
+    let frame = 0
+    let start: number | null = null
+
+    const tick = (now: number) => {
+      if (start === null) start = now
+      const deg = (((now - start) / 1000) * DEG_PER_SEC) % 360
+      orb.style.transform = `rotate(${deg}deg)`
+      for (const el of iconRefs.current) {
+        if (el) el.style.transform = `translate(-50%, -50%) rotate(${-deg}deg)`
+      }
+      frame = requestAnimationFrame(tick)
+    }
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Lime accent glow — sits on top of the page-level shader */}
@@ -61,15 +111,41 @@ export function HeroSection() {
 
         {/* Right — solar system */}
         <div className="relative flex items-center justify-center order-first lg:order-last">
-          <div className="relative h-[320px] w-[320px] sm:h-[440px] sm:w-[440px] lg:h-[620px] lg:w-[620px]">
+          <div
+            ref={orbRef}
+            className="relative w-[210px] sm:w-[315px] lg:w-[280px] xl:w-[350px] 2xl:w-[450px]"
+            style={{ aspectRatio: "596 / 488", transformOrigin: CORE_ORIGIN, willChange: "transform" }}
+          >
             <Image
-              src="/solar-system-new.png"
+              src="/rotate/coreandtentacles.png"
               alt="DevMind memory network"
               fill
               className="object-contain"
               style={{ filter: "drop-shadow(0 0 40px rgba(173,255,47,0.5)) drop-shadow(0 0 100px rgba(173,255,47,0.2))" }}
-              priority
+              sizes="(min-width: 1536px) 450px, (min-width: 1280px) 350px, (min-width: 1024px) 280px, (min-width: 640px) 315px, 210px"
+              preload
             />
+
+            {/* Branded pod at each tentacle tip — orbits with the rotation, stays upright */}
+            {NODES.map((n, i) => (
+              <div
+                key={n.label}
+                ref={(el) => {
+                  iconRefs.current[i] = el
+                }}
+                className="absolute"
+                style={{
+                  left: `${n.left}%`,
+                  top: `${n.top}%`,
+                  width: `${POD_PCT}%`,
+                  aspectRatio: "1",
+                  transform: "translate(-50%, -50%)",
+                  willChange: "transform",
+                }}
+              >
+                <Image src={n.src} alt={n.label} fill className="object-contain" sizes="(min-width: 1536px) 155px, (min-width: 1024px) 95px, 72px" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
