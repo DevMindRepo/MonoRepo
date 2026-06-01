@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { CodePill } from "@/components/ui/code-pill"
 import { Play } from "lucide-react"
 
-// Geometry measured from /rotate/coreandtentacles.png (596×488, transparent).
+// Geometry measured from /rotate2/coreandtentacles.png (596×488, transparent).
 // The image rotates about its glowing core (which sits slightly above the
 // bounding-box center), and a branded pod is anchored at each tentacle tip.
 const CORE_ORIGIN = "50.2% 45.7%" // core center as % of the image — the rotation pivot
@@ -16,13 +16,13 @@ const POD_PCT = 34 // pod ("remora") size, as % of the container width
 // Each pod's resting position = its tentacle tip, as % of the image box.
 // Mapped to the original solar-system layout by matching tentacle angle.
 const NODES = [
-  { left: 26.8, top: 7.4, src: "/rotate/Sui.png", label: "Sui" },
-  { left: 67.8, top: 2.3, src: "/rotate/ClaudeCode.png", label: "Claude Code" },
-  { left: 91.3, top: 21.1, src: "/rotate/cursor.png", label: "Cursor" },
-  { left: 94.0, top: 69.1, src: "/rotate/github.png", label: "GitHub" },
-  { left: 54.0, top: 95.9, src: "/rotate/mcp.png", label: "MCP" },
-  { left: 11.7, top: 83.4, src: "/rotate/Walrus.png", label: "Walrus" },
-  { left: 4.2, top: 38.5, src: "/rotate/Seal.png", label: "Seal" },
+  { left: 26.8, top: 7.4, src: "/rotate2/Sui.png", label: "Sui" },
+  { left: 67.8, top: 2.3, src: "/rotate2/ClaudeCode.png", label: "Claude Code" },
+  { left: 91.3, top: 21.1, src: "/rotate2/cursor.png", label: "Cursor" },
+  { left: 94.0, top: 69.1, src: "/rotate2/github.png", label: "GitHub" },
+  { left: 54.0, top: 95.9, src: "/rotate2/mcp.png", label: "MCP" },
+  { left: 11.7, top: 83.4, src: "/rotate2/Walrus.png", label: "Walrus" },
+  { left: 4.2, top: 38.5, src: "/rotate2/Seal.png", label: "Seal" },
 ]
 
 export function HeroSection() {
@@ -113,16 +113,16 @@ export function HeroSection() {
         <div className="relative flex items-center justify-center order-first lg:order-last">
           <div
             ref={orbRef}
-            className="relative w-[210px] sm:w-[315px] lg:w-[280px] xl:w-[350px] 2xl:w-[450px]"
+            className="relative w-[232px] sm:w-[348px] lg:w-[309px] xl:w-[386px] 2xl:w-[497px]"
             style={{ aspectRatio: "596 / 488", transformOrigin: CORE_ORIGIN, willChange: "transform" }}
           >
             <Image
-              src="/rotate/coreandtentacles.png"
+              src="/rotate2/coreandtentacles.png"
               alt="DevMind memory network"
               fill
               className="object-contain"
               style={{ filter: "drop-shadow(0 0 40px rgba(173,255,47,0.5)) drop-shadow(0 0 100px rgba(173,255,47,0.2))" }}
-              sizes="(min-width: 1536px) 450px, (min-width: 1280px) 350px, (min-width: 1024px) 280px, (min-width: 640px) 315px, 210px"
+              sizes="(min-width: 1536px) 497px, (min-width: 1280px) 386px, (min-width: 1024px) 309px, (min-width: 640px) 348px, 232px"
               preload
             />
 
@@ -143,7 +143,7 @@ export function HeroSection() {
                   willChange: "transform",
                 }}
               >
-                <Image src={n.src} alt={n.label} fill className="object-contain" sizes="(min-width: 1536px) 155px, (min-width: 1024px) 95px, 72px" />
+                <Image src={n.src} alt={n.label} fill className="object-contain" sizes="(min-width: 1536px) 169px, (min-width: 1024px) 105px, 79px" />
               </div>
             ))}
           </div>
