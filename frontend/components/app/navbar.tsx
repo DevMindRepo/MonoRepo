@@ -35,7 +35,7 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           scrolled || mobileOpen
-            ? "bg-[rgba(7,11,14,0.95)] backdrop-blur-md border-b border-[rgba(255,255,255,0.06)]"
+            ? "bg-[rgba(7,11,14,0.96)] border-b border-[rgba(255,255,255,0.06)]"
             : "bg-transparent"
         )}
       >

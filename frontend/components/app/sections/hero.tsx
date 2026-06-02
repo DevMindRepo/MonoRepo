@@ -38,23 +38,39 @@ export function HeroSection() {
 
     // Slow idle rotation — one full turn per minute. The core + tentacles spin
     // about the core; the pods orbit along with them but counter-rotate so they
-    // (and their labels) stay upright.
+    // (and their labels) stay upright. The glow is a separate static layer (see
+    // JSX), so this spin is a cheap composited transform and keeps running
+    // smoothly even mid-scroll. Only paused when the hero is fully off-screen.
     const DEG_PER_SEC = 6
-    let frame = 0
-    let start: number | null = null
+    let raf = 0
+    let deg = 0
+    let lastTs: number | null = null
+    let visible = true
 
     const tick = (now: number) => {
-      if (start === null) start = now
-      const deg = (((now - start) / 1000) * DEG_PER_SEC) % 360
+      raf = requestAnimationFrame(tick)
+      if (!visible) { lastTs = null; return }
+      if (lastTs === null) lastTs = now
+      const dt = (now - lastTs) / 1000
+      lastTs = now
+      deg = (deg + dt * DEG_PER_SEC) % 360
       orb.style.transform = `rotate(${deg}deg)`
       for (const el of iconRefs.current) {
         if (el) el.style.transform = `translate(-50%, -50%) rotate(${-deg}deg)`
       }
-      frame = requestAnimationFrame(tick)
     }
 
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    const io = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting },
+      { rootMargin: "100px" }
+    )
+    io.observe(orb)
+
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      io.disconnect()
+    }
   }, [])
 
   return (
@@ -112,40 +128,56 @@ export function HeroSection() {
         {/* Right — solar system */}
         <div className="relative flex items-center justify-center order-first lg:order-last">
           <div
-            ref={orbRef}
             className="relative w-[232px] sm:w-[348px] lg:w-[309px] xl:w-[386px] 2xl:w-[497px]"
-            style={{ aspectRatio: "596 / 488", transformOrigin: CORE_ORIGIN, willChange: "transform" }}
+            style={{ aspectRatio: "596 / 488" }}
           >
-            <Image
-              src="/rotate2/coreandtentacles.png"
-              alt="DevMind memory network"
-              fill
-              className="object-contain"
-              style={{ filter: "drop-shadow(0 0 40px rgba(173,255,47,0.5)) drop-shadow(0 0 100px rgba(173,255,47,0.2))" }}
-              sizes="(min-width: 1536px) 497px, (min-width: 1280px) 386px, (min-width: 1024px) 309px, (min-width: 640px) 348px, 232px"
-              preload
+            {/* Static lime glow — kept OFF the rotating orb so the spin stays a cheap
+                GPU transform (no per-frame drop-shadow re-paint) and runs smoothly
+                even while scrolling. */}
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(circle at 50% 46%, rgba(173,255,47,0.5) 0%, rgba(173,255,47,0.18) 38%, transparent 70%)",
+                filter: "blur(22px)",
+              }}
+              aria-hidden="true"
             />
 
-            {/* Branded pod at each tentacle tip — orbits with the rotation, stays upright */}
-            {NODES.map((n, i) => (
-              <div
-                key={n.label}
-                ref={(el) => {
-                  iconRefs.current[i] = el
-                }}
-                className="absolute"
-                style={{
-                  left: `${n.left}%`,
-                  top: `${n.top}%`,
-                  width: `${POD_PCT}%`,
-                  aspectRatio: "1",
-                  transform: "translate(-50%, -50%)",
-                  willChange: "transform",
-                }}
-              >
-                <Image src={n.src} alt={n.label} fill className="object-contain" sizes="(min-width: 1536px) 169px, (min-width: 1024px) 105px, 79px" />
-              </div>
-            ))}
+            <div
+              ref={orbRef}
+              className="absolute inset-0"
+              style={{ transformOrigin: CORE_ORIGIN, willChange: "transform" }}
+            >
+              <Image
+                src="/rotate2/coreandtentacles.png"
+                alt="DevMind memory network"
+                fill
+                className="object-contain"
+                sizes="(min-width: 1536px) 497px, (min-width: 1280px) 386px, (min-width: 1024px) 309px, (min-width: 640px) 348px, 232px"
+                preload
+              />
+
+              {/* Branded pod at each tentacle tip — orbits with the rotation, stays upright */}
+              {NODES.map((n, i) => (
+                <div
+                  key={n.label}
+                  ref={(el) => {
+                    iconRefs.current[i] = el
+                  }}
+                  className="absolute"
+                  style={{
+                    left: `${n.left}%`,
+                    top: `${n.top}%`,
+                    width: `${POD_PCT}%`,
+                    aspectRatio: "1",
+                    transform: "translate(-50%, -50%)",
+                    willChange: "transform",
+                  }}
+                >
+                  <Image src={n.src} alt={n.label} fill className="object-contain" sizes="(min-width: 1536px) 169px, (min-width: 1024px) 105px, 79px" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -77,7 +77,6 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
   const [pulseEffect, setPulseEffect]     = useState<Record<number, boolean>>({});
   const [activeNodeId, setActiveNodeId]   = useState<number | null>(null);
-  const [, setTick]                       = useState(0);
   const [sizing, setSizing]               = useState<OrbitalSizing>(() => getOrbitalSizing(
     typeof window !== "undefined" ? window.innerWidth : 1024
   ));
@@ -91,6 +90,9 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   const rafRef         = useRef<number | undefined>(undefined);
   const containerRef   = useRef<HTMLDivElement>(null);
   const orbitRef       = useRef<HTMLDivElement>(null);
+  const nodeElsRef      = useRef<(HTMLDivElement | null)[]>([]);
+  const activeNodeIdRef = useRef<number | null>(null);
+  const sizingRef       = useRef<OrbitalSizing>(sizing);
 
   // Sync sizing on window resize
   useEffect(() => {
@@ -103,7 +105,30 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // rAF always runs — handles both auto-rotate and snap-to-target
+  // Mirror state into refs so the (stable) animation loop can read the latest
+  // values without being re-created each render.
+  useEffect(() => { activeNodeIdRef.current = activeNodeId; }, [activeNodeId]);
+  useEffect(() => { sizingRef.current = sizing; }, [sizing]);
+
+  // rAF — runs only while the section is visible (see IntersectionObserver below)
+  // Apply orbital node positions straight to the DOM. The old approach called
+  // setTick() every frame, re-rendering the whole subtree 60×/s and starving
+  // the smooth-scroll thread. Now React only renders on click/state changes.
+  const applyPositions = useCallback(() => {
+    const radius = sizingRef.current.orbitRadius;
+    const n      = timelineData.length;
+    for (let index = 0; index < n; index++) {
+      const el = nodeElsRef.current[index];
+      if (!el) continue;
+      const angle    = ((index / n) * 360 + rotationRef.current) % 360;
+      const rad      = (angle * Math.PI) / 180;
+      const isActive = timelineData[index].id === activeNodeIdRef.current;
+      el.style.transform = `translate(${radius * Math.cos(rad)}px, ${radius * Math.sin(rad)}px)`;
+      el.style.zIndex    = String(isActive ? 200 : Math.round(100 + 50 * Math.cos(rad)));
+      el.style.opacity   = String(isActive ? 1 : Math.max(0.55, Math.min(1, 0.35 + 0.65 * ((1 + Math.sin(rad)) / 2))));
+    }
+  }, [timelineData]);
+
   const animate = useCallback((ts: number) => {
     if (!lastTimeRef.current) lastTimeRef.current = ts;
     const dt = (ts - lastTimeRef.current) / 1000;
@@ -132,14 +157,36 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
       rotationRef.current = (rotationRef.current + dt * 6) % 360;
     }
 
-    setTick(t => t + 1);
+    applyPositions();
     rafRef.current = requestAnimationFrame(animate);
-  }, []);
+  }, [applyPositions]);
 
+  // Only run the loop while the section is on-screen, so it stops competing
+  // with smooth-scroll once the user scrolls past it.
   useEffect(() => {
-    lastTimeRef.current = null;
-    rafRef.current = requestAnimationFrame(animate);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    const el = containerRef.current;
+    if (!el) return;
+
+    const start = () => {
+      if (rafRef.current == null) {
+        lastTimeRef.current = null;
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+    const stop = () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) start(); else stop(); },
+      { rootMargin: "100px" }
+    );
+    io.observe(el);
+
+    return () => { io.disconnect(); stop(); };
   }, [animate]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -241,7 +288,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
   return (
     <div
       ref={containerRef}
-      className="w-full h-screen flex flex-col items-center justify-center overflow-hidden relative"
+      className="w-full h-screen flex flex-col items-center justify-center overflow-hidden relative isolate"
       onClick={handleContainerClick}
       style={{ background: "#070B0E" }}
     >
@@ -288,6 +335,7 @@ export default function RadialOrbitalTimeline({ timelineData }: RadialOrbitalTim
           return (
             <div
               key={item.id}
+              ref={el => { nodeElsRef.current[index] = el; }}
               className="absolute transition-[opacity] duration-200 cursor-pointer"
               style={{
                 transform: `translate(${pos.x}px, ${pos.y}px)`,

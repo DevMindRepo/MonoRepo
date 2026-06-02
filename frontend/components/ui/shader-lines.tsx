@@ -10,6 +10,7 @@ declare global {
 
 export function ShaderAnimation() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
   const sceneRef = useRef<{
     camera: any
     scene: any
@@ -35,6 +36,7 @@ export function ShaderAnimation() {
     document.head.appendChild(script)
 
     return () => {
+      observerRef.current?.disconnect()
       if (sceneRef.current.animationId) {
         cancelAnimationFrame(sceneRef.current.animationId)
       }
@@ -123,10 +125,21 @@ export function ShaderAnimation() {
     scene.add(mesh)
 
     const renderer = new THREE.WebGLRenderer()
-    renderer.setPixelRatio(window.devicePixelRatio)
+    // Force DPR 1 — this is a faint (20% opacity) ambient background, so retina
+    // resolution just burns GPU/compositor time (and scroll frames) for no gain.
+    renderer.setPixelRatio(1)
     container.appendChild(renderer.domElement)
 
     sceneRef.current = { camera, scene, renderer, uniforms, animationId: null }
+
+    // Pause rendering once the shader region scrolls out of view.
+    let visible = true
+    const io = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting },
+      { rootMargin: "200px" }
+    )
+    io.observe(container)
+    observerRef.current = io
 
     const onWindowResize = () => {
       const rect = container.getBoundingClientRect()
@@ -140,6 +153,7 @@ export function ShaderAnimation() {
 
     const animate = () => {
       sceneRef.current.animationId = requestAnimationFrame(animate)
+      if (!visible) return
       uniforms.time.value += 0.05
       ;(window as any).__devmindShaderTime = uniforms.time.value
       renderer.render(scene, camera)
